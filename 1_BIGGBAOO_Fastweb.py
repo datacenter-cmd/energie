@@ -16,7 +16,13 @@ try:
     authenticator = stauth.Authenticate(
         config["credentials"], config["cookie"]["name"],
         config["cookie"]["key"], config["cookie"]["expiry_days"])
-    name, auth_status, username = authenticator.login("", "unrendered")
+    try:
+        authenticator.login(location='unrendered')
+    except:
+        pass
+    name = st.session_state.get("name")
+    auth_status = st.session_state.get("authentication_status")
+    username = st.session_state.get("username")
 except:
     auth_status = None
 
@@ -248,3 +254,4 @@ if table:
         data=buf.getvalue(),
         file_name=f"fastweb_{uploaded.name}",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
