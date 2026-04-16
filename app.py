@@ -105,23 +105,7 @@ try:
         config["cookie"]["key"],
         config["cookie"]["expiry_days"],
     )
-    try:
-        auth_result = authenticator.login(location='main')
-        if isinstance(auth_result, tuple):
-            name, auth_status, username = auth_result
-        else:
-            name = auth_result.get("name") if auth_result else None
-            auth_status = auth_result is not None
-            username = auth_result.get("username") if auth_result else None
-    except Exception as login_ex:
-        # Compatibilità con versioni diverse di streamlit-authenticator
-        try:
-            auth_result = authenticator.login()
-            name = st.session_state.get("name")
-            auth_status = st.session_state.get("authentication_status")
-            username = st.session_state.get("username")
-        except:
-            name, auth_status, username = None, None, None
+    name, auth_status, username = authenticator.login("Accedi al Portale", "main")
 except Exception as ex:
     st.error(f"Errore di autenticazione: {ex}")
     st.stop()
@@ -153,7 +137,7 @@ with st.sidebar:
     st.markdown("- 📋 BIGGBAOO ↔ Fastweb")
     st.markdown("- 👥 BIGGBAOO ↔ Agenti")
     st.divider()
-    authenticator.logout(button_name="🚪 Esci", location="sidebar")
+    authenticator.logout("🚪 Esci", "sidebar")
     st.divider()
     st.caption("v6 · Portale Energie BIGGBAOO")
 
