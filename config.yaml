@@ -1,0 +1,30 @@
+credentials:
+  usernames:
+    ignazio.gatta:
+      email: ignazio.gatta@biggbaoo.it
+      name: Ignazio Gatta
+      password: "$2b$12$ZE6CU.qKKBY5NfX5ER521ubywbmELtcOYYWNCJqwZlCpzuU/gcszW"
+    admin1:
+      email: admin1@biggbaoo.it
+      name: Amministratore 1
+      password: "$2b$12$HmA.gu21pJpXzhCjo0o1Lu6OnRCRwIrbdN5nB/qVosHW0ZUaafN1m"
+    admin2:
+      email: admin2@biggbaoo.it
+      name: Amministratore 2
+      password: "$2b$12$Ox2HNsY/AvBeZ8..RHuop.x/dTAtjDlCoITeDiH82UvTdOwp7Y3Ny"
+    admin3:
+      email: admin3@biggbaoo.it
+      name: Amministratore 3
+      password: "$2b$12$p/dysGB6tLuIYssXqAPcuOUVlqeZDTfosv9ZDVXTXOPSF2hfC/vbu"
+    admin4:
+      email: admin4@biggbaoo.it
+      name: Amministratore 4
+      password: "$2b$12$ej2dWWSrJhJyuJHKN26Xv.9IBph1wyBUaV8xnKFoVa/Snx8Mq08na"
+
+cookie:
+  expiry_days: 7
+  key: biggbaoo_portale_energie_secret_2025
+  name: biggbaoo_auth_cookie
+
+preauthorized:
+  emails: []

@@ -1,0 +1,8 @@
+streamlit>=1.33.0
+pandas>=2.0.0
+openpyxl>=3.1.0
+streamlit-authenticator>=0.3.2
+bcrypt>=4.0.0
+pyyaml>=6.0
+# Per integrazione SSO futura con portal.easytlc.it:
+# streamlit-oauth>=0.1.3
