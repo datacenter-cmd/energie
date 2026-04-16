@@ -1,30 +1,36 @@
+cookie:
+  expiry_days: 30
+  key: biggbaoo_secret_key_2025
+  name: biggbaoo_auth
 credentials:
   usernames:
-    ignazio.gatta:
-      email: ignazio.gatta@biggbaoo.it
-      name: Ignazio Gatta
-      password: "$2b$12$ZE6CU.qKKBY5NfX5ER521ubywbmELtcOYYWNCJqwZlCpzuU/gcszW"
     admin1:
       email: admin1@biggbaoo.it
+      failed_login_attempts: 0
+      logged_in: false
       name: Amministratore 1
-      password: "$2b$12$HmA.gu21pJpXzhCjo0o1Lu6OnRCRwIrbdN5nB/qVosHW0ZUaafN1m"
+      password: $2b$12$h9bzb9fZ.3yLpnxFut1WFurtyHjndszkmFUAQ/N13QUI/0Z526diK
     admin2:
       email: admin2@biggbaoo.it
+      failed_login_attempts: 0
+      logged_in: false
       name: Amministratore 2
-      password: "$2b$12$Ox2HNsY/AvBeZ8..RHuop.x/dTAtjDlCoITeDiH82UvTdOwp7Y3Ny"
+      password: $2b$12$7r5fPOH0hm6L8ggeBt.QZ.SAxeAZgl.7RQpzFDoIVXqescYdNlosq
     admin3:
       email: admin3@biggbaoo.it
+      failed_login_attempts: 0
+      logged_in: false
       name: Amministratore 3
-      password: "$2b$12$p/dysGB6tLuIYssXqAPcuOUVlqeZDTfosv9ZDVXTXOPSF2hfC/vbu"
+      password: $2b$12$1Cv6SVIueWuUTpQ1YTpnP.gg9kFGE3ngwNjVkiOO3QrI0QepYyXPy
     admin4:
       email: admin4@biggbaoo.it
+      failed_login_attempts: 0
+      logged_in: false
       name: Amministratore 4
-      password: "$2b$12$ej2dWWSrJhJyuJHKN26Xv.9IBph1wyBUaV8xnKFoVa/Snx8Mq08na"
-
-cookie:
-  expiry_days: 7
-  key: biggbaoo_portale_energie_secret_2025
-  name: biggbaoo_auth_cookie
-
-preauthorized:
-  emails: []
+      password: $2b$12$MlSk6x.q7zcxZccX9R7uFeItDPpujd1bzlDeYxHw3qijHQLwT7wCa
+    ignazio.gatta:
+      email: ignazio.gatta@biggbaoo.it
+      failed_login_attempts: 0
+      logged_in: false
+      name: Ignazio Gatta
+      password: $2b$12$84nZ6I5tzc8ciXTEGN96H.P6nptxkcUp1MqRlYoCodQBnsZBGPcEa

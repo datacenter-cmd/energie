@@ -110,6 +110,7 @@ except Exception as ex:
     st.error(f"Errore di autenticazione: {ex}")
     st.stop()
 
+
 if auth_status is False:
     st.error("❌ Username o password errati.")
     st.stop()
