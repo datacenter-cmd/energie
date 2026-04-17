@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
-import yaml
 import os
-from yaml.loader import SafeLoader
+from auth import login_form, logout, require_login
 
 st.set_page_config(
     page_title="Portale Energie · BIGGBAOO",
@@ -91,41 +90,11 @@ div[data-testid="stSidebarContent"] { background:#ebebeb !important; }
 """, unsafe_allow_html=True)
 
 # ─── LOGIN ───────────────────────────────────────
-try:
-    import streamlit_authenticator as stauth
-    CONFIG_FILE = "config.yaml"
-    if not os.path.exists(CONFIG_FILE):
-        st.error("❌ File config.yaml non trovato. Contatta l'amministratore.")
-        st.stop()
-    with open(CONFIG_FILE, encoding="utf-8") as f:
-        config = yaml.load(f, Loader=SafeLoader)
-    authenticator = stauth.Authenticate(
-        config["credentials"],
-        config["cookie"]["name"],
-        config["cookie"]["key"],
-        config["cookie"]["expiry_days"],
-    )
-    name, auth_status, username = authenticator.login("Accedi al Portale", "main")
-except Exception as ex:
-    st.error(f"Errore di autenticazione: {ex}")
+if not login_form():
     st.stop()
 
-
-if auth_status is False:
-    st.error("❌ Username o password errati.")
-    st.stop()
-if auth_status is None:
-    st.markdown("""
-    <div class="login-header">
-      <div class="logo">⚡</div>
-      <div class="title">Portale Energie · BIGGBAOO</div>
-      <div class="sub">Verifica pagamenti Fastweb · Controllo pratiche agenti</div>
-      <div style="margin-top:.5rem;font-size:.75rem;color:#b0b0b0;" data-sso-provider="easytlc">
-        <!-- SSO_INTEGRATION_POINT: sostituire login con OAuth2 easytlc -->
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
+name = st.session_state.get("name")
+username = st.session_state.get("username")
 
 # ─── SIDEBAR ─────────────────────────────────────
 with st.sidebar:
@@ -138,7 +107,7 @@ with st.sidebar:
     st.markdown("- 📋 BIGGBAOO ↔ Fastweb")
     st.markdown("- 👥 BIGGBAOO ↔ Agenti")
     st.divider()
-    authenticator.logout("🚪 Esci", "sidebar")
+    if st.button("🚪 Esci"): logout()
     st.divider()
     st.caption("v6 · Portale Energie BIGGBAOO")
 
