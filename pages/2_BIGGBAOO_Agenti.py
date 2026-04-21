@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os, io
 from auth import require_login
+from drive import get_all_files, download_by_id
 from utils import (norm, fmt_cur, fmt_date, ts_now,
                    parse_agenti, parse_pagato, parse_inserito, match_agenti,
                    load_storico, add_to_storico, STORICO_AGENTI)
@@ -62,11 +63,49 @@ with st.sidebar:
     st.markdown(f"👤 {name}")
     st.divider()
     st.markdown("**1️⃣ File gestionale agenti**")
-    upl_agenti = st.file_uploader("exportgridData (.xlsx)", type=["xlsx","xls"],
+    # ── Sorgente dati: Drive o Upload manuale ──
+    st.markdown("**📂 File agenti da Google Drive**")
+    drive_files_ag = get_all_files("agenti_")
+    upl_agenti = None
+    if drive_files_ag:
+        nomi_ag = [n for n, _ in drive_files_ag]
+        scelta_ag = st.selectbox("Seleziona file agenti da Drive", nomi_ag, index=0)
+        fid_ag = dict(drive_files_ag)[scelta_ag]
+        if st.button("📥 Carica agenti da Drive"):
+            buf = download_by_id(fid_ag)
+            st.session_state["ag_buf"] = buf
+            st.session_state["ag_name"] = scelta_ag
+        if "ag_buf" in st.session_state:
+            upl_agenti = st.session_state["ag_buf"]
+            upl_agenti.name = st.session_state["ag_name"]
+    else:
+        st.caption("Nessun file agenti su Drive — carica manualmente")
+    manual_ag = st.file_uploader("oppure carica exportgridData (.xlsx)", type=["xlsx","xls"],
         key="upl_ag", help="File esportato dal gestionale con le pratiche inserite dagli agenti")
+    if manual_ag:
+        upl_agenti = manual_ag
+
     st.markdown("**2️⃣ File pagato Fastweb**")
-    upl_pagato = st.file_uploader("File pagato (.xlsx)", type=["xlsx","xls"],
+    drive_files_pag = get_all_files("fastweb_")
+    upl_pagato = None
+    if drive_files_pag:
+        nomi_pag = [n for n, _ in drive_files_pag]
+        scelta_pag = st.selectbox("Seleziona file pagato da Drive", nomi_pag, index=0)
+        fid_pag = dict(drive_files_pag)[scelta_pag]
+        if st.button("📥 Carica pagato da Drive"):
+            buf2 = download_by_id(fid_pag)
+            st.session_state["pag_buf"] = buf2
+            st.session_state["pag_name"] = scelta_pag
+        if "pag_buf" in st.session_state:
+            upl_pagato = st.session_state["pag_buf"]
+            upl_pagato.name = st.session_state["pag_name"]
+    else:
+        st.caption("Nessun file pagato su Drive — carica manualmente")
+    manual_pag = st.file_uploader("oppure carica file pagato (.xlsx)", type=["xlsx","xls"],
         key="upl_pag", help="File Fastweb con il foglio 'pagato nuovo format'")
+    if manual_pag:
+        upl_pagato = manual_pag
+
     st.divider()
     st.markdown("**🕐 Storico caricamenti**")
     storico = load_storico(STORICO_AGENTI)
@@ -84,6 +123,7 @@ with st.sidebar:
 st.markdown("# 👥 BIGGBAOO ↔ Agenti")
 st.markdown("Verifica pratiche agenti · Determina i compensi da liquidare")
 st.divider()
+
 
 if not upl_agenti or not upl_pagato:
     missing = []

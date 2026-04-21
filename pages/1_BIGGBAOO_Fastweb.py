@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os, io
 from auth import require_login
+from drive import get_all_files, download_by_id
 from utils import (norm, fmt_cur, fmt_date, ts_now,
                    parse_inserito, parse_pagato, match_ins_pag,
                    load_storico, add_to_storico, STORICO_FASTWEB)
@@ -62,8 +63,33 @@ with st.sidebar:
     st.markdown(f"👤 {name}")
     st.divider()
     st.markdown("**Carica file Excel Fastweb**")
-    uploaded = st.file_uploader("File mensile (.xlsx)", type=["xlsx","xls"],
+    # ── Sorgente dati: Drive o Upload manuale ──
+    st.markdown("**📂 Carica da Google Drive**")
+    drive_files = get_all_files("fastweb_")
+    uploaded = None
+    if drive_files:
+        nomi = [n for n, _ in drive_files]
+        scelta = st.selectbox("Seleziona file da Drive", nomi, index=0)
+        file_id = dict(drive_files)[scelta]
+        if st.button("📥 Carica da Drive"):
+            buf = download_by_id(file_id)
+            import types
+            uploaded = buf
+            uploaded.name = scelta
+            st.session_state["fw_buf"] = buf
+            st.session_state["fw_name"] = scelta
+        elif "fw_buf" in st.session_state:
+            uploaded = st.session_state["fw_buf"]
+            uploaded.name = st.session_state["fw_name"]
+    else:
+        st.caption("Nessun file trovato su Drive — carica manualmente sotto")
+
+    st.markdown("**oppure carica manualmente:**")
+    manual = st.file_uploader("File mensile (.xlsx)", type=["xlsx","xls"],
         help="Deve contenere i fogli: inserito · pagato nuovo format")
+    if manual:
+        uploaded = manual
+
     st.divider()
     st.markdown("**🕐 Storico caricamenti**")
     storico = load_storico(STORICO_FASTWEB)
@@ -81,6 +107,7 @@ with st.sidebar:
 st.markdown("# 📋 BIGGBAOO ↔ Fastweb")
 st.markdown("Confronto pratiche inserite vs pagamenti ricevuti da Fastweb")
 st.divider()
+
 
 if not uploaded:
     st.info("👈 Carica il file Excel mensile Fastweb dalla barra laterale.")
