@@ -93,35 +93,43 @@ if not pratiche_all:
 
 # ─── SELETTORE MESE DI COMPETENZA ─────────────────────
 mesi_disponibili = sorted(set(r["target"] for r in pratiche_all if r["target"]), reverse=True)
+TUTTI = "📊 TUTTI I MESI"
 
 st.markdown("### 📅 Seleziona il mese di competenza")
 col_ms, col_info = st.columns([2,3])
 with col_ms:
-    mese_sel = st.selectbox("Mese", mesi_disponibili, index=0, label_visibility="collapsed")
+    mese_sel = st.selectbox("Mese", [TUTTI] + mesi_disponibili, index=0, label_visibility="collapsed")
 with col_info:
-    n_mese = sum(1 for r in pratiche_all if r["target"] == mese_sel)
-    st.info(f"**{mese_sel}** → {n_mese} pratiche nel file")
+    if mese_sel == TUTTI:
+        st.info(f"**Tutti i mesi** → {len(pratiche_all)} pratiche totali nel file")
+    else:
+        n_mese = sum(1 for r in pratiche_all if r["target"] == mese_sel)
+        st.info(f"**{mese_sel}** → {n_mese} pratiche nel file")
 
 st.divider()
 
 # Filtra pratiche per mese selezionato
-pratiche_mese = [r for r in pratiche_all if r["target"] == mese_sel]
+if mese_sel == TUTTI:
+    pratiche_mese = pratiche_all
+else:
+    pratiche_mese = [r for r in pratiche_all if r["target"] == mese_sel]
 
 # Costruisci mappe per il matching
 fw_map = build_fw_map(df_fw_raw) if not df_fw_raw.empty else {}
 
-# Per i vis_fattura filtra solo il mese corrispondente
-vis_mese = []
-mese_lower = mese_sel.lower()
-for sh in sheets:
-    if sh.startswith("vis_fattura_"):
-        # es. vis_fattura_febbraio_2026 → febbraio_2026
-        tag = sh.replace("vis_fattura_","").replace("_"," ")
-        if any(p in mese_lower for p in tag.split()):
-            vis_mese.append(pd.read_excel(uploaded, sheet_name=sh))
-# Se non trovato per nome, usa tutti i vis
-if not vis_mese:
+# Per i vis_fattura: se "tutti" usa tutti i fogli, altrimenti solo quello del mese
+if mese_sel == TUTTI:
     vis_mese = vis_sheets
+else:
+    vis_mese = []
+    mese_lower = mese_sel.lower()
+    for sh in sheets:
+        if sh.startswith("vis_fattura_") and sh != "vis_fattura_TUTTI":
+            tag = sh.replace("vis_fattura_","").replace("_"," ")
+            if any(p in mese_lower for p in tag.split()):
+                vis_mese.append(pd.read_excel(uploaded, sheet_name=sh))
+    if not vis_mese:
+        vis_mese = vis_sheets
 
 ag_map = build_ag_map(df_ag_raw if not df_ag_raw.empty else pd.DataFrame(), vis_mese)
 
@@ -143,7 +151,7 @@ add_to_storico(STORICO_AGENTI, {"filename": fname, "ts": ts_now(), "totale": tot
 
 c1,c2,c3,c4,c5,c6 = st.columns(6)
 kpis = [
-    (c1, "PRATICHE MESE",     totale,           "",                                   ""),
+    (c1, "PRATICHE TOTALI" if mese_sel == TUTTI else "PRATICHE MESE",     totale,           "",                                   ""),
     (c2, "✅ COMPLETE",       completi,          f"{round(completi/totale*100) if totale else 0}% del totale", "ok"),
     (c3, "💶 FASTWEB PAGATO", fmt_cur(tot_fw),  f"{fw_pag} pratiche",                 "gold"),
     (c4, "👤 AGENTI PAGATI",  fmt_cur(tot_ag),  f"{ag_pag} pratiche",                 "pri"),
@@ -222,14 +230,41 @@ for op in sorted(set(r["operatore"] for r in filtered if r["operatore"])):
     })
 st.dataframe(pd.DataFrame(op_rows), use_container_width=True, hide_index=True)
 
+# ─── RIEPILOGO PER MESE (solo se TUTTI) ──────────────
+if mese_sel == TUTTI:
+    st.divider()
+    st.markdown("### 📅 Riepilogo per mese")
+    mese_rows = []
+    for mese in sorted(set(r["target"] for r in pratiche if r["target"])):
+        mp = [r for r in pratiche if r["target"] == mese]
+        n_tot = len(mp)
+        n_ok  = sum(1 for r in mp if r["_stato_match"] == "✅ Completo")
+        n_fw  = sum(1 for r in mp if r["_fw"])
+        n_ag  = sum(1 for r in mp if r["_ag"])
+        t_fw  = sum((r["_fw"]["importo_tot"] or 0)    for r in mp if r["_fw"])
+        t_ag  = sum((r["_ag"]["importo_pagato"] or 0) for r in mp if r["_ag"])
+        mese_rows.append({
+            "Mese":          mese,
+            "Pratiche":      n_tot,
+            "Complete":      n_ok,
+            "FW Pagate":     n_fw,
+            "AG Pagate":     n_ag,
+            "Tot Fastweb €": fmt_cur(t_fw),
+            "Tot Agente €":  fmt_cur(t_ag),
+            "Margine €":     fmt_cur(t_fw - t_ag),
+        })
+    st.dataframe(pd.DataFrame(mese_rows), use_container_width=True, hide_index=True)
+
 # ─── EXPORT ───────────────────────────────────────────
 st.divider()
 buf_out = io.BytesIO()
 with pd.ExcelWriter(buf_out, engine="openpyxl") as writer:
     df_table.to_excel(writer, sheet_name="dettaglio", index=False)
     pd.DataFrame(op_rows).to_excel(writer, sheet_name="riepilogo_operatori", index=False)
+    if mese_sel == TUTTI:
+        pd.DataFrame(mese_rows).to_excel(writer, sheet_name="riepilogo_mesi", index=False)
 buf_out.seek(0)
-mese_tag = mese_sel.replace(" ","_").replace("/","_")
+mese_tag = mese_sel.replace(" ","_").replace("/","_").replace("📊","ALL")
 st.download_button("⬇️ Esporta Excel", buf_out,
     file_name=f"report_agenti_{mese_tag}.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
