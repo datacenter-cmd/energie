@@ -1,118 +1,61 @@
 import streamlit as st
 import pandas as pd
-import os, io
+import io
 from auth import require_login
 from drive import get_all_files, download_by_id
 from utils import (norm, fmt_cur, fmt_date, ts_now,
-                   parse_agenti, parse_pagato, parse_inserito, match_agenti,
-                   load_storico, add_to_storico, STORICO_AGENTI)
+                   parse_pratiche, parse_pag_fastweb, parse_pag_agenti,
+                   match_agenti_v2, load_storico, add_to_storico, STORICO_AGENTI)
 
 st.set_page_config(page_title="BIGGBAOO ↔ Agenti", page_icon="👥", layout="wide")
 
-# ─── AUTH CHECK ──────────────────────────────────
+# ─── AUTH ────────────────────────────────────────
 name, username = require_login()
 
 # ─── CSS ─────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-html, body, [class*="css"], .stMarkdown, .stText, button, input, select, textarea {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-}
-.kpi-box {
-    background: #ffffff; border-radius: 8px; padding: .9rem 1.1rem;
-    border: 1px solid #e0e0e0; box-shadow: 0 1px 3px rgba(0,0,0,.06);
-    text-align: center; margin-bottom: .5rem;
-}
-.kpi-label { font-size:.72rem; color:#6b6b6b; text-transform:uppercase; letter-spacing:.07em; font-weight:600; }
-.kpi-value { font-size:1.8rem; font-weight:700; line-height:1.1; margin:.25rem 0; color:#1a1a1a; }
-.kpi-sub   { font-size:.72rem; color:#6b6b6b; }
-.ok   { color:#2a7a2a; } .err  { color:#b02020; }
-.gold { color:#7a5c00; } .pri  { color:#2d2d2d; }
-.info-box {
-    background:#ffffff; border:1px solid #d8d8d8; border-left:3px solid #2d2d2d;
-    border-radius:6px; padding:.75rem 1rem; font-size:.875rem; margin-bottom:.75rem;
-}
-.warn-box {
-    background:#fff8f0; border:1px solid #e8d0b0; border-left:3px solid #b05a00;
-    border-radius:6px; padding:.75rem 1rem; font-size:.875rem; margin-bottom:.75rem;
-}
-.section-title {
-    font-size:1rem; font-weight:600; color:#1a1a1a; margin-bottom:.6rem;
-    display:flex; align-items:center; gap:.4rem;
-    border-bottom:1px solid #e0e0e0; padding-bottom:.4rem;
-}
-div[data-testid="stSidebarContent"] { background:#ebebeb !important; }
-.storico-item {
-    background:#ffffff; border:1px solid #e0e0e0; border-radius:6px;
-    padding:.5rem .9rem; font-size:.8rem; margin-bottom:.4rem;
-}
-.login-header { text-align:center; padding:2.5rem 0 1rem; }
-.login-header .logo  { font-size:2.5rem; }
-.login-header .title { font-size:1.5rem; font-weight:700; margin:.4rem 0; color:#1a1a1a; }
-.login-header .sub   { color:#6b6b6b; font-size:.9rem; }
-[data-sso-provider="easytlc"] { display:none; }
-</style>
-""", unsafe_allow_html=True)
+.kpi-card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:18px 12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.kpi-label{font-size:.72rem;font-weight:600;letter-spacing:.08em;color:#888;text-transform:uppercase;margin-bottom:4px}
+.kpi-value{font-size:1.7rem;font-weight:700;color:#1a1a1a}
+.kpi-sub{font-size:.78rem;color:#aaa;margin-top:2px}
+.ok{color:#1e7e4a}.err{color:#c0392b}.gold{color:#b8860b}.pri{color:#1a7abf}
+</style>""", unsafe_allow_html=True)
 
 # ─── SIDEBAR ─────────────────────────────────────
 with st.sidebar:
-    st.markdown("### ⚡ Portale Energie")
-    st.markdown("**BIGGBAOO**")
-    st.markdown(f"👤 {name}")
+    st.markdown(f"👤 **{name}**")
     st.divider()
-    st.markdown("**1️⃣ File gestionale agenti**")
-    # ── Sorgente dati: Drive o Upload manuale ──
     st.markdown("**📂 File agenti da Google Drive**")
-    drive_files_ag = get_all_files("agenti_")
-    upl_agenti = None
-    if drive_files_ag:
-        nomi_ag = [n for n, _ in drive_files_ag]
-        scelta_ag = st.selectbox("Seleziona file agenti da Drive", nomi_ag, index=0)
-        fid_ag = dict(drive_files_ag)[scelta_ag]
-        if st.button("📥 Carica agenti da Drive"):
-            buf = download_by_id(fid_ag)
-            st.session_state["ag_buf"] = buf
-            st.session_state["ag_name"] = scelta_ag
-        if "ag_buf" in st.session_state:
-            upl_agenti = st.session_state["ag_buf"]
-            upl_agenti.name = st.session_state["ag_name"]
-    else:
-        st.caption("Nessun file agenti su Drive — carica manualmente")
-    manual_ag = st.file_uploader("oppure carica exportgridData (.xlsx)", type=["xlsx","xls"],
-        key="upl_ag", help="File esportato dal gestionale con le pratiche inserite dagli agenti")
-    if manual_ag:
-        upl_agenti = manual_ag
 
-    st.markdown("**2️⃣ File pagato Fastweb**")
-    drive_files_pag = get_all_files("fastweb_")
-    upl_pagato = None
-    if drive_files_pag:
-        nomi_pag = [n for n, _ in drive_files_pag]
-        scelta_pag = st.selectbox("Seleziona file pagato da Drive", nomi_pag, index=0)
-        fid_pag = dict(drive_files_pag)[scelta_pag]
-        if st.button("📥 Carica pagato da Drive"):
-            buf2 = download_by_id(fid_pag)
-            st.session_state["pag_buf"] = buf2
-            st.session_state["pag_name"] = scelta_pag
-        if "pag_buf" in st.session_state:
-            upl_pagato = st.session_state["pag_buf"]
-            upl_pagato.name = st.session_state["pag_name"]
+    drive_files = get_all_files("agenti_")
+    uploaded = None
+
+    if drive_files:
+        nomi = [n for n, _ in drive_files]
+        scelta = st.selectbox("Seleziona file", nomi, index=0)
+        fid = dict(drive_files)[scelta]
+        if st.button("📥 Carica da Drive"):
+            buf = download_by_id(fid)
+            st.session_state["ag2_buf"] = buf
+            st.session_state["ag2_name"] = scelta
+        if "ag2_buf" in st.session_state:
+            uploaded = st.session_state["ag2_buf"]
+            uploaded.name = st.session_state["ag2_name"]
     else:
-        st.caption("Nessun file pagato su Drive — carica manualmente")
-    manual_pag = st.file_uploader("oppure carica file pagato (.xlsx)", type=["xlsx","xls"],
-        key="upl_pag", help="File Fastweb con il foglio 'pagato nuovo format'")
-    if manual_pag:
-        upl_pagato = manual_pag
+        st.caption("Nessun file su Drive — carica manualmente")
+
+    manual = st.file_uploader("oppure carica .xlsx", type=["xlsx","xls"])
+    if manual:
+        uploaded = manual
 
     st.divider()
     st.markdown("**🕐 Storico caricamenti**")
     storico = load_storico(STORICO_AGENTI)
     if storico:
         for s in storico[:5]:
-            nc = s.get("totale",0)-s.get("complete",0)
-            st.markdown(f"📄 **{s['filename_ag']}**  \n🕐 {s['ts']} · ✅{s.get('complete',0)} ❌{nc}")
+            nc = s.get("totale",0) - s.get("complete",0)
+            st.markdown(f"📄 **{s.get('filename','')}**  \n🕐 {s.get('ts','')} · ✅{s.get('complete',0)} ❌{nc}")
             st.markdown("---")
     else:
         st.caption("Nessun caricamento precedente")
@@ -121,213 +64,159 @@ with st.sidebar:
 
 # ─── HEADER ──────────────────────────────────────
 st.markdown("# 👥 BIGGBAOO ↔ Agenti")
-st.markdown("Verifica pratiche agenti · Determina i compensi da liquidare")
+st.markdown("Pratiche agenti · Pagamenti Fastweb · Compensi corrisposti")
 st.divider()
 
-
-if not upl_agenti or not upl_pagato:
-    missing = []
-    if not upl_agenti: missing.append("📋 File gestionale agenti")
-    if not upl_pagato: missing.append("💶 File pagato Fastweb")
-    st.info(f"👈 Carica dalla barra laterale:  \n" + "  \n".join(missing))
+if not uploaded:
+    st.info("👈 Carica il file agenti dalla barra laterale.")
     st.stop()
 
-# ─── CARICAMENTO ─────────────────────────────────
+# ─── LETTURA FILE ─────────────────────────────────
 try:
-    # Agenti
-    df_ag = pd.read_excel(upl_agenti)
-    rows_ag = parse_agenti(df_ag)
+    xl = pd.ExcelFile(uploaded)
+    sheets = xl.sheet_names
 
-    # Pagato Fastweb
-    xl_pag = pd.ExcelFile(upl_pagato)
-    sheet_pag = next((s for s in xl_pag.sheet_names if "pagato nuovo" in s.lower()), None)
-    sheet_ins = next((s for s in xl_pag.sheet_names if s.lower()=="inserito"), None)
-    if not sheet_pag:
-        st.error("❌ Foglio 'pagato nuovo format' non trovato nel file pagato.")
+    if "pratiche" not in sheets:
+        st.error("❌ Sheet 'pratiche' non trovato. Usa il template standard.")
         st.stop()
-    df_pag = pd.read_excel(upl_pagato, sheet_name=sheet_pag)
-    pag_map = parse_pagato(df_pag)
 
-    # Inserito (opzionale ma migliora il match)
-    rows_ins = []
-    if sheet_ins:
-        df_ins = pd.read_excel(upl_pagato, sheet_name=sheet_ins)
-        rows_ins = parse_inserito(df_ins)
+    df_prat = pd.read_excel(uploaded, sheet_name="pratiche")
+    df_fw   = pd.read_excel(uploaded, sheet_name="pagamenti_fastweb") if "pagamenti_fastweb" in sheets else pd.DataFrame()
+    df_ag   = pd.read_excel(uploaded, sheet_name="pagamenti_agenti")  if "pagamenti_agenti"  in sheets else pd.DataFrame()
 
-    # Match triplo
-    rows_ag = match_agenti(rows_ag, rows_ins, pag_map)
+    pratiche  = parse_pratiche(df_prat)
+    fw_map    = parse_pag_fastweb(df_fw)   if not df_fw.empty   else {}
+    ag_map    = parse_pag_agenti(df_ag)    if not df_ag.empty   else {}
+    pratiche  = match_agenti_v2(pratiche, fw_map, ag_map)
 
-    # Categorie
-    completi   = [r for r in rows_ag if r["_match_type"]=="✅ Completo"]
-    solo_ins   = [r for r in rows_ag if r["_match_type"]=="⚠️ Solo inserito"]
-    solo_pag   = [r for r in rows_ag if r["_match_type"]=="⚠️ Solo pagato"]
-    non_trovati= [r for r in rows_ag if r["_match_type"]=="❌ Non trovato"]
+except Exception as e:
+    st.error(f"❌ Errore lettura file: {e}")
+    st.stop()
 
-    importo_da_pagare = sum(r["_match_pag"]["importo_tot"] for r in completi if r["_match_pag"])
-
-    add_to_storico(STORICO_AGENTI, {
-        "filename_ag": upl_agenti.name,
-        "filename_pag": upl_pagato.name,
-        "ts": ts_now(),
-        "totale": len(rows_ag),
-        "complete": len(completi),
-        "importo_da_pagare": importo_da_pagare,
-    })
-
-except Exception as ex:
-    st.error(f"❌ Errore: {ex}")
-    import traceback; st.code(traceback.format_exc())
+if not pratiche:
+    st.warning("Nessuna pratica trovata nel file.")
     st.stop()
 
 # ─── KPI ─────────────────────────────────────────
-c1,c2,c3,c4,c5 = st.columns(5)
+totale    = len(pratiche)
+completi  = sum(1 for r in pratiche if r["_stato_match"] == "✅ Completo")
+fw_pagati = sum(1 for r in pratiche if r["_fw"])
+ag_pagati = sum(1 for r in pratiche if r["_ag"])
+non_trov  = sum(1 for r in pratiche if r["_stato_match"] == "❌ Non trovato")
+
+tot_fw    = sum((r["_fw"]["importo_tot"]  or 0) for r in pratiche if r["_fw"])
+tot_ag    = sum((r["_ag"]["importo_pagato"] or 0) for r in pratiche if r["_ag"])
+margine   = tot_fw - tot_ag
+
+# Salva storico
+fname = getattr(uploaded, "name", "agenti.xlsx")
+add_to_storico(STORICO_AGENTI, {
+    "filename": fname, "ts": ts_now(),
+    "totale": totale, "complete": completi,
+})
+
+c1,c2,c3,c4,c5,c6 = st.columns(6)
 kpis = [
-    ("Pratiche agenti", len(rows_ag), "", "caricate"),
-    ("✅ Completo (ins+pag)", len(completi), "ok", "inserite e pagate"),
-    ("⚠️ Solo inserito", len(solo_ins), "gold", "non ancora pagate"),
-    ("❌ Non trovato", len(non_trovati), "err", "verificare"),
-    ("💶 Da liquidare agenti", fmt_cur(importo_da_pagare), "pri", "pratiche complete"),
+    (c1, "PRATICHE TOTALI",    totale,            "",                         ""),
+    (c2, "✅ COMPLETE",        completi,           f"{round(completi/totale*100)}% del totale", "ok"),
+    (c3, "💶 FASTWEB PAGATO",  fmt_cur(tot_fw),   f"{fw_pagati} pratiche",     "gold"),
+    (c4, "👤 AGENTI PAGATI",   fmt_cur(tot_ag),   f"{ag_pagati} pratiche",     "pri"),
+    (c5, "📈 MARGINE",         fmt_cur(margine),  "fastweb - agenti",          "ok" if margine >= 0 else "err"),
+    (c6, "❌ NON TROVATE",     non_trov,           f"{round(non_trov/totale*100)}% del totale", "err"),
 ]
-for col,(label,val,cls,sub) in zip([c1,c2,c3,c4,c5],kpis):
+for col, label, val, sub, cls in kpis:
     with col:
-        st.markdown(f'''<div class="kpi-box">
-          <div class="kpi-label">{label}</div>
-          <div class="kpi-value {cls}">{val}</div>
-          <div class="kpi-sub">{sub}</div>
-        </div>''', unsafe_allow_html=True)
+        st.markdown(f"""<div class="kpi-card">
+            <div class="kpi-label">{label}</div>
+            <div class="kpi-value {cls}">{val}</div>
+            <div class="kpi-sub">{sub}</div>
+        </div>""", unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ─── TABS STATO ──────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs([
-    f"✅ Complete ({len(completi)})",
-    f"⚠️ Solo inserito ({len(solo_ins)})",
-    f"⚠️ Solo pagato ({len(solo_pag)})",
-    f"❌ Non trovate ({len(non_trovati)})",
-])
+# ─── FILTRI ──────────────────────────────────────
+col_f1, col_f2, col_f3 = st.columns(3)
+operatori = sorted(set(r["operatore"] for r in pratiche if r["operatore"]))
+stati_match = sorted(set(r["_stato_match"] for r in pratiche))
+target_list = sorted(set(r["target"] for r in pratiche if r["target"]))
 
-def build_table_agenti(rows):
-    out = []
-    for r in rows:
-        pag = r["_match_pag"]
-        out.append({
-            "Data":          r["data"],
-            "Target":        r["target"],
-            "Punto Vendita": r["punto_vendita"],
-            "Operatore":     r["operatore"],
-            "Servizio":      r["servizio"].replace("ATTIVAZIONE FASTWEB ",""),
-            "Stato":         r["stato"],
-            "PDA/DOC":       r["pda_raw"][:18]+"…" if len(r["pda_raw"])>18 else r["pda_raw"],
-            "Match":         r["_match_type"],
-            "Base €":        fmt_cur(pag["importo_base"]) if pag else "—",
-            "Gara €":        fmt_cur(pag["importo_gara"]) if pag else "—",
-            "Totale €":      fmt_cur(pag["importo_tot"])  if pag else "—",
-            "Offerta":       pag["offerta"] if pag else "—",
-            "Stato Fornitura": pag["stato_forn"] if pag else "—",
-        })
-    return pd.DataFrame(out)
+with col_f1:
+    sel_op  = st.multiselect("Operatore", operatori)
+with col_f2:
+    sel_sm  = st.multiselect("Stato incrocio", stati_match)
+with col_f3:
+    sel_tgt = st.multiselect("Target (mese)", target_list)
 
-# Filtri comuni
-st.markdown("### 🔍 Filtri")
-fa1,fa2,fa3 = st.columns([2,2,3])
-pvs_ag  = ["Tutti"]+sorted(set(r["punto_vendita"] for r in rows_ag if r["punto_vendita"]))
-ops_ag  = ["Tutti"]+sorted(set(r["operatore"] for r in rows_ag if r["operatore"]))
-with fa1: sel_pv_ag = st.selectbox("Punto Vendita", pvs_ag, key="fpv_ag")
-with fa2: sel_op_ag = st.selectbox("Operatore", ops_ag, key="fop_ag")
-with fa3: search_ag = st.text_input("Cerca (PDA/DOC · Operatore · Punto Vendita)", key="fsrch_ag")
+filtered = pratiche
+if sel_op:  filtered = [r for r in filtered if r["operatore"] in sel_op]
+if sel_sm:  filtered = [r for r in filtered if r["_stato_match"] in sel_sm]
+if sel_tgt: filtered = [r for r in filtered if r["target"] in sel_tgt]
 
-def apply_filters(rows):
-    f = rows[:]
-    if sel_pv_ag != "Tutti": f=[r for r in f if r["punto_vendita"]==sel_pv_ag]
-    if sel_op_ag != "Tutti": f=[r for r in f if r["operatore"]==sel_op_ag]
-    if search_ag:
-        s=search_ag.upper()
-        f=[r for r in f if s in r["pda_norm"] or s in r["operatore"].upper()
-           or s in r["punto_vendita"].upper() or s in r["target"].upper()]
-    return f
+# ─── TABELLA ─────────────────────────────────────
+st.markdown(f"### 📋 Dettaglio pratiche ({len(filtered)} righe)")
 
-def excel_download(df, fname):
-    buf = io.BytesIO()
-    with pd.ExcelWriter(buf, engine="openpyxl") as w:
-        df.to_excel(w, index=False, sheet_name="Pratiche")
-    return buf.getvalue()
+table_rows = []
+for r in filtered:
+    fw = r["_fw"] or {}
+    ag = r["_ag"] or {}
+    table_rows.append({
+        "Stato":        r["_stato_match"],
+        "Data":         r["data"],
+        "Target":       r["target"],
+        "Operatore":    r["operatore"],
+        "Punto Vendita":r["punto_vendita"],
+        "Servizio":     r["servizio"],
+        "Stato Gest.":  r["stato"],
+        "PDA/DOC":      r["pda"],
+        "Cliente":      r["cliente"],
+        "Offerta FW":   fw.get("offerta","—"),
+        "Base FW €":    fmt_cur(fw["importo_base"]) if fw else "—",
+        "Gara FW €":    fmt_cur(fw["importo_gara"]) if fw else "—",
+        "Tot FW €":     fmt_cur(fw["importo_tot"])  if fw else "—",
+        "Data Att.":    fw.get("data_att","—")       if fw else "—",
+        "Pag. Agente €":fmt_cur(ag["importo_pagato"]) if ag else "—",
+        "% Ragg.":      ag.get("pct","—")             if ag else "—",
+        "Data Pag.":    ag.get("data_pag","—")         if ag else "—",
+    })
 
-with tab1:
-    rows_f = apply_filters(completi)
-    st.markdown(f"**{len(rows_f)}** pratiche complete nella selezione · Importo da liquidare: **{fmt_cur(sum(r['_match_pag']['importo_tot'] for r in rows_f if r['_match_pag']))}**")
-    df_t = build_table_agenti(rows_f)
-    if not df_t.empty:
-        st.dataframe(df_t, use_container_width=True, height=min(60+len(df_t)*38,500))
-        st.download_button("📥 Esporta Excel pratiche complete",
-            data=excel_download(df_t, "completi"),
-            file_name=f"agenti_completi_{upl_agenti.name}",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+df_table = pd.DataFrame(table_rows)
+st.dataframe(df_table, use_container_width=True, height=450,
+    column_config={"Stato": st.column_config.TextColumn(width="medium")})
 
-with tab2:
-    rows_f = apply_filters(solo_ins)
-    st.markdown(f"**{len(rows_f)}** pratiche inserite ma non ancora pagate da Fastweb")
-    df_t = build_table_agenti(rows_f)
-    if not df_t.empty:
-        st.dataframe(df_t, use_container_width=True, height=min(60+len(df_t)*38,500))
-        st.download_button("📥 Esporta Excel pratiche in attesa",
-            data=excel_download(df_t, "solo_ins"),
-            file_name=f"agenti_in_attesa_{upl_agenti.name}",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-with tab3:
-    rows_f = apply_filters(solo_pag)
-    st.markdown(f"**{len(rows_f)}** pratiche pagate ma non trovate nel gestionale agenti")
-    df_t = build_table_agenti(rows_f)
-    if not df_t.empty:
-        st.dataframe(df_t, use_container_width=True, height=min(60+len(df_t)*38,500))
-        st.download_button("📥 Esporta Excel",
-            data=excel_download(df_t, "solo_pag"),
-            file_name=f"agenti_solo_pagato_{upl_agenti.name}",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-with tab4:
-    rows_f = apply_filters(non_trovati)
-    st.markdown(f"**{len(rows_f)}** pratiche non trovate né nel pagato né nell'inserito — verificare")
-    df_t = build_table_agenti(rows_f)
-    if not df_t.empty:
-        st.dataframe(df_t, use_container_width=True, height=min(60+len(df_t)*38,500))
-        st.download_button("📥 Esporta Excel",
-            data=excel_download(df_t, "non_trovati"),
-            file_name=f"agenti_non_trovati_{upl_agenti.name}",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-# ─── RIEPILOGO PAGAMENTI PER OPERATORE ───────────
+# ─── RIEPILOGO PER OPERATORE ─────────────────────
 st.divider()
-st.markdown("### 💶 Riepilogo compensi per operatore")
-st.caption("Basato sulle pratiche complete (inserite + pagate)")
+st.markdown("### 👤 Riepilogo per operatore")
 
-if completi:
-    riepilogo = {}
-    for r in apply_filters(completi):
-        op = r["operatore"] or "N/D"
-        pag = r["_match_pag"]
-        if op not in riepilogo:
-            riepilogo[op] = {"Operatore":op,"Punto Vendita":r["punto_vendita"],
-                             "Pratiche":0,"Base €":0.0,"Gara €":0.0,"Totale €":0.0}
-        riepilogo[op]["Pratiche"] += 1
-        if pag:
-            riepilogo[op]["Base €"]   += pag["importo_base"] or 0
-            riepilogo[op]["Gara €"]   += pag["importo_gara"] or 0
-            riepilogo[op]["Totale €"] += pag["importo_tot"]  or 0
+op_rows = []
+for op in sorted(set(r["operatore"] for r in filtered if r["operatore"])):
+    op_prat = [r for r in filtered if r["operatore"] == op]
+    n_tot  = len(op_prat)
+    n_comp = sum(1 for r in op_prat if r["_stato_match"] == "✅ Completo")
+    n_fw   = sum(1 for r in op_prat if r["_fw"])
+    n_ag   = sum(1 for r in op_prat if r["_ag"])
+    t_fw   = sum((r["_fw"]["importo_tot"] or 0)     for r in op_prat if r["_fw"])
+    t_ag   = sum((r["_ag"]["importo_pagato"] or 0)  for r in op_prat if r["_ag"])
+    op_rows.append({
+        "Operatore":       op,
+        "Pratiche":        n_tot,
+        "Complete":        n_comp,
+        "FW Pagate":       n_fw,
+        "AG Pagate":       n_ag,
+        "Tot Fastweb €":   fmt_cur(t_fw),
+        "Tot Agente €":    fmt_cur(t_ag),
+        "Margine €":       fmt_cur(t_fw - t_ag),
+    })
 
-    df_riepilogo = pd.DataFrame(list(riepilogo.values())).sort_values("Totale €", ascending=False)
-    df_riepilogo["Base €"]   = df_riepilogo["Base €"].apply(fmt_cur)
-    df_riepilogo["Gara €"]   = df_riepilogo["Gara €"].apply(fmt_cur)
-    df_riepilogo["Totale €"] = df_riepilogo["Totale €"].apply(fmt_cur)
-    st.dataframe(df_riepilogo, use_container_width=True, hide_index=True)
+st.dataframe(pd.DataFrame(op_rows), use_container_width=True, hide_index=True)
 
-    buf_riepilogo = io.BytesIO()
-    df_riepilogo_raw = pd.DataFrame(list(riepilogo.values())).sort_values("Totale €", ascending=False)
-    with pd.ExcelWriter(buf_riepilogo, engine="openpyxl") as w:
-        df_riepilogo_raw.to_excel(w, index=False, sheet_name="Riepilogo operatori")
-    st.download_button("📥 Esporta riepilogo compensi Excel",
-        data=buf_riepilogo.getvalue(),
-        file_name=f"riepilogo_compensi_{upl_agenti.name}",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-else:
-    st.caption("Nessuna pratica completa con i filtri correnti.")
+# ─── EXPORT ──────────────────────────────────────
+st.divider()
+buf_out = io.BytesIO()
+with pd.ExcelWriter(buf_out, engine="openpyxl") as writer:
+    df_table.to_excel(writer, sheet_name="dettaglio", index=False)
+    pd.DataFrame(op_rows).to_excel(writer, sheet_name="riepilogo_operatori", index=False)
+buf_out.seek(0)
+mese = fname.replace("agenti_","").replace(".xlsx","").replace(".xls","")
+st.download_button("⬇️ Esporta Excel", buf_out,
+    file_name=f"report_agenti_{mese}.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
