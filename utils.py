@@ -66,11 +66,17 @@ def parse_inserito(df):
 def parse_pagato(df):
     pag_map = {}
     for _, r in df.iterrows():
-        try: ib = float(r.get("IMPORTO COMMISSIONE",0) or 0)
+        try:
+            ib = float(r.get("IMPORTO COMMISSIONE",0) or 0)
+            if ib != ib: ib = 0.0  # nan check
         except: ib = 0.0
-        try: ig = float(r.get("IMPORTO GARA",0) or 0)
+        try:
+            ig = float(r.get("IMPORTO GARA",0) or 0)
+            if ig != ig: ig = 0.0
         except: ig = 0.0
-        try: it = float(r.get("IMPORTO TOTALE",0) or 0)
+        try:
+            it = float(r.get("IMPORTO TOTALE",0) or 0)
+            if it != it: it = 0.0
         except: it = 0.0
         d = {
             "importo_base": ib, "importo_gara": ig, "importo_tot": it,
