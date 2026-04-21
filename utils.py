@@ -164,3 +164,82 @@ def match_agenti(rows_ag, ins_rows, pag_map):
         elif not r["_match_ins"] and r["_match_pag"]: r["_match_type"] = "⚠️ Solo pagato"
         else: r["_match_type"] = "❌ Non trovato"
     return rows_ag
+
+# ─── PARSE NUOVO FORMATO AGENTI ──────────────────
+def parse_pratiche(df):
+    """Sheet 'pratiche' — pratiche inserite dagli agenti."""
+    rows = []
+    for _, r in df.iterrows():
+        pda = norm(r.get("PDA/DOC",""))
+        if not pda: continue
+        rows.append({
+            "data":          fmt_date(r.get("Data","")),
+            "target":        str(r.get("Target (Mese)","")).strip(),
+            "punto_vendita": str(r.get("Punto Vendita","")).strip(),
+            "operatore":     str(r.get("Operatore","")).strip(),
+            "servizio":      str(r.get("Servizio","")).strip(),
+            "stato":         str(r.get("Stato","")).strip(),
+            "pda":           pda,
+            "cliente":       str(r.get("Cliente","")).strip(),
+        })
+    return rows
+
+def parse_pag_fastweb(df):
+    """Sheet 'pagamenti_fastweb' — quanto Fastweb ha pagato a BIGGBAOO."""
+    pmap = {}
+    for _, r in df.iterrows():
+        try: ib = float(r.get("Importo Base €", 0) or 0)
+        except: ib = 0.0
+        if ib != ib: ib = 0.0
+        try: ig = float(r.get("Importo Gara €", 0) or 0)
+        except: ig = 0.0
+        if ig != ig: ig = 0.0
+        try: it = float(r.get("Importo Totale €", 0) or 0)
+        except: it = it = ib + ig
+        if it != it: it = ib + ig
+        entry = {
+            "importo_base": ib, "importo_gara": ig, "importo_tot": it,
+            "offerta":       str(r.get("Offerta","")).strip(),
+            "data_att":      fmt_date(r.get("Data Attivazione","")),
+            "competenza":    fmt_date(r.get("Competenza","")),
+            "codice_pod":    norm(r.get("Codice POD","")),
+            "codice_contr":  norm(r.get("Codice Contratto","")),
+        }
+        for key in [norm(r.get("Codice POD","")), norm(r.get("Codice Contratto",""))]:
+            if key: pmap[key] = entry
+    return pmap
+
+def parse_pag_agenti(df):
+    """Sheet 'pagamenti_agenti' — quanto BIGGBAOO ha già pagato agli agenti."""
+    pmap = {}
+    for _, r in df.iterrows():
+        pda = norm(r.get("PDA/DOC",""))
+        if not pda: continue
+        try: imp = float(r.get("Importo Pagato €", 0) or 0)
+        except: imp = 0.0
+        if imp != imp: imp = 0.0
+        pmap[pda] = {
+            "importo_pagato": imp,
+            "pct":            str(r.get("% Raggiungimento","")).strip(),
+            "data_pag":       fmt_date(r.get("Data Pagamento","")),
+            "mese_fattura":   str(r.get("Mese Fattura","")).strip(),
+            "operatore":      str(r.get("Operatore","")).strip(),
+        }
+    return pmap
+
+def match_agenti_v2(pratiche, fw_map, ag_map):
+    """Incrocia pratiche con pagamenti Fastweb e pagamenti agenti."""
+    for r in pratiche:
+        key = r["pda"]
+        # Match con Fastweb
+        r["_fw"] = fw_map.get(key)
+        # Match con pagamenti agenti
+        r["_ag"] = ag_map.get(key)
+        # Stato incrocio
+        has_fw = r["_fw"] is not None
+        has_ag = r["_ag"] is not None
+        if has_fw and has_ag:   r["_stato_match"] = "✅ Completo"
+        elif has_fw:            r["_stato_match"] = "💶 Fastweb pagato"
+        elif has_ag:            r["_stato_match"] = "👤 Solo agente"
+        else:                   r["_stato_match"] = "❌ Non trovato"
+    return pratiche
