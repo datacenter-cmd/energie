@@ -126,8 +126,11 @@ try:
     rows    = match_ins_pag(parse_inserito(df_ins), pag_map)
     paid    = [r for r in rows if r["_match"]]
     unpaid  = [r for r in rows if not r["_match"]]
-    importo_base = sum(r["_match"]["importo_base"] for r in paid)
-    importo_tot  = sum(r["_match"]["importo_tot"]  for r in paid)
+    def safe_float(v):
+        try: return float(v) if v is not None else 0.0
+        except: return 0.0
+    importo_base = sum(safe_float(r["_match"]["importo_base"]) for r in paid)
+    importo_tot  = sum(safe_float(r["_match"]["importo_tot"])  for r in paid)
     add_to_storico(STORICO_FASTWEB, {
         "filename": uploaded.name, "ts": ts_now(),
         "totale": len(rows), "pagate": len(paid),
