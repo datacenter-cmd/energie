@@ -243,3 +243,128 @@ def match_agenti_v2(pratiche, fw_map, ag_map):
         elif has_ag:            r["_stato_match"] = "👤 Solo agente"
         else:                   r["_stato_match"] = "❌ Non trovato"
     return pratiche
+
+# ─── MATCHING MULTI-CHIAVE v2 ─────────────────────────
+import re as _re
+
+def _norm_key(v):
+    if not v or (isinstance(v, float) and v != v): return ''
+    return str(v).strip().upper().replace(' ','')
+
+def _norm_tel(v):
+    if not v or (isinstance(v, float) and v != v): return ''
+    s = _re.sub(r'[^\d]', '', str(v).split('.')[0])
+    return s[-10:] if len(s) >= 9 else ''
+
+def build_fw_map(df):
+    """Costruisce mappa multi-chiave da sheet pagamenti_fastweb."""
+    m = {}
+    for _, r in df.iterrows():
+        try: ib = float(r.get('Importo Base €', 0) or 0)
+        except: ib = 0.0
+        if ib != ib: ib = 0.0
+        try: ig = float(r.get('Importo Gara €', 0) or 0)
+        except: ig = 0.0
+        if ig != ig: ig = 0.0
+        try: it = float(r.get('Importo Totale €', 0) or 0)
+        except: it = ib + ig
+        if it != it: it = ib + ig
+        entry = {
+            'importo_base': ib, 'importo_gara': ig, 'importo_tot': it,
+            'offerta': str(r.get('Offerta','')).strip(),
+            'data_att': fmt_date(r.get('Data Attivazione','')),
+            'competenza': fmt_date(r.get('Competenza','')),
+        }
+        for col in ['Codice POD','Codice Contratto']:
+            k = _norm_key(r.get(col,''))
+            if k and k not in m: m[k] = entry
+    return m
+
+def build_ag_map(df_ag, df_vis_sheets):
+    """Costruisce mappa agenti da sheet pagamenti_agenti + tutti i vis_fattura_*."""
+    m = {}
+    # Dal foglio pagamenti_agenti principale
+    for _, r in df_ag.iterrows():
+        try: imp = float(r.get('Importo Pagato €', 0) or 0)
+        except: imp = 0.0
+        if imp != imp: imp = 0.0
+        try:
+            pct_raw = str(r.get('% Raggiungimento',''))
+            pct_str = pct_raw if pct_raw and pct_raw != 'nan' else ''
+        except: pct_str = ''
+        entry = {
+            'importo_pagato': imp,
+            'pct': pct_str,
+            'data_pag': fmt_date(r.get('Data Pagamento','')),
+            'mese_fattura': str(r.get('Mese Fattura','')).strip(),
+            'operatore': str(r.get('Operatore','')).strip(),
+        }
+        for col in ['PDA/DOC']:
+            k = _norm_key(r.get(col,''))
+            if k and k not in m: m[k] = entry
+    # Dai fogli vis_fattura_*
+    for df_v in df_vis_sheets:
+        if df_v is None or df_v.empty: continue
+        for _, r in df_v.iterrows():
+            try: imp = float(r.get('Importo Pagato €', 0) or 0)
+            except: imp = 0.0
+            if imp != imp: imp = 0.0
+            entry = {
+                'importo_pagato': imp,
+                'pct': str(r.get('% Raggiungimento','')),
+                'data_pag': fmt_date(r.get('Data Attivazione','')),
+                'mese_fattura': str(r.get('Mese Fattura','')).strip(),
+                'operatore': str(r.get('Operatore','')).strip(),
+            }
+            for col in ['PDA/DOC','Codice Contratto']:
+                k = _norm_key(r.get(col,''))
+                if k and k not in m: m[k] = entry
+    return m
+
+def match_row(pratica, fw_map, ag_map):
+    """Incrocia una pratica con le mappe fw e ag usando chiavi multiple."""
+    pda = _norm_key(pratica.get('pda',''))
+    tel = _norm_tel(pratica.get('_tel',''))
+    cf_cli = _norm_key(pratica.get('_cf_cliente',''))
+
+    keys = [k for k in [pda, tel, cf_cli] if k]
+
+    fw = None
+    for k in keys:
+        if k in fw_map: fw = fw_map[k]; break
+
+    ag = None
+    for k in keys:
+        if k in ag_map: ag = ag_map[k]; break
+
+    if fw and ag:   stato = "✅ Completo"
+    elif fw:        stato = "💶 Fastweb pagato"
+    elif ag:        stato = "👤 Solo agente"
+    else:           stato = "❌ Non trovato"
+
+    pratica['_fw'] = fw
+    pratica['_ag'] = ag
+    pratica['_stato_match'] = stato
+    return pratica
+
+def parse_pratiche_v2(df):
+    """Sheet 'pratiche' con campi extra per matching."""
+    rows = []
+    for _, r in df.iterrows():
+        pda = _norm_key(r.get('PDA/DOC',''))
+        if not pda: continue
+        data = r.get('Data','')
+        if hasattr(data, 'strftime'): data = data.strftime('%d/%m/%Y')
+        rows.append({
+            'data':           data,
+            'target':         str(r.get('Target (Mese)','') or r.get('Target','')).strip(),
+            'punto_vendita':  str(r.get('Punto Vendita','')).strip(),
+            'operatore':      str(r.get('Operatore','')).strip().title(),
+            'servizio':       str(r.get('Servizio','')).strip(),
+            'stato':          str(r.get('Stato','')).strip(),
+            'pda':            pda,
+            'cliente':        str(r.get('Cliente','') or r.get('CLIENTE PDA','')).strip(),
+            '_tel':           str(r.get('N° Tel.', '') or ''),
+            '_cf_cliente':    _norm_key(r.get('CLIENTE PDA','')),
+        })
+    return rows
