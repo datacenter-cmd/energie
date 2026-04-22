@@ -13,9 +13,9 @@ name, username = require_login()
 st.markdown("""
 <style>
 .kpi-card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:20px 10px 16px 10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);min-height:120px;box-sizing:border-box}
-.kpi-label{font-size:.68rem;font-weight:700;letter-spacing:.07em;color:#999;text-transform:uppercase;margin-bottom:8px;line-height:1.3}
+.kpi-label{font-size:.75rem;font-weight:800;letter-spacing:.04em;color:#1a1a1a;text-transform:uppercase;margin-bottom:8px;line-height:1.3}
 .kpi-value{font-size:1.6rem;font-weight:800;color:#1a1a1a;line-height:1.2;margin-bottom:4px}
-.kpi-sub{font-size:.74rem;color:#bbb;line-height:1.3}
+.kpi-sub{font-size:.74rem;color:#999;line-height:1.3}
 .ok{color:#1e7e4a}.err{color:#c0392b}.gold{color:#b8860b}.pri{color:#1a7abf}
 </style>""", unsafe_allow_html=True)
 

@@ -25,7 +25,7 @@ html, body, [class*="css"], .stMarkdown, .stText, button, input, select, textare
     border: 1px solid #e0e0e0; box-shadow: 0 1px 3px rgba(0,0,0,.06);
     text-align: center; margin-bottom: .5rem;
 }
-.kpi-label { font-size:.72rem; color:#6b6b6b; text-transform:uppercase; letter-spacing:.07em; font-weight:600; }
+.kpi-label { font-size:.75rem; color:#1a1a1a; text-transform:uppercase; letter-spacing:.04em; font-weight:800; }
 .kpi-value { font-size:1.8rem; font-weight:700; line-height:1.1; margin:.25rem 0; color:#1a1a1a; }
 .kpi-sub   { font-size:.72rem; color:#6b6b6b; }
 .ok   { color:#2a7a2a; } .err  { color:#b02020; }
