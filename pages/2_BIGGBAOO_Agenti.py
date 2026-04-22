@@ -12,10 +12,10 @@ name, username = require_login()
 
 st.markdown("""
 <style>
-.kpi-card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:18px 12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.kpi-label{font-size:.72rem;font-weight:600;letter-spacing:.08em;color:#888;text-transform:uppercase;margin-bottom:4px}
-.kpi-value{font-size:1.7rem;font-weight:700;color:#1a1a1a}
-.kpi-sub{font-size:.78rem;color:#aaa;margin-top:2px}
+.kpi-card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:18px 12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);height:110px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.kpi-label{font-size:.72rem;font-weight:600;letter-spacing:.08em;color:#888;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.kpi-value{font-size:1.55rem;font-weight:700;color:#1a1a1a;white-space:nowrap}
+.kpi-sub{font-size:.75rem;color:#aaa;margin-top:2px;white-space:nowrap}
 .ok{color:#1e7e4a}.err{color:#c0392b}.gold{color:#b8860b}.pri{color:#1a7abf}
 </style>""", unsafe_allow_html=True)
 
