@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
 import io
-from auth import require_login
+from auth import require_login, require_admin
 from drive import get_all_files, download_by_id
 from utils import (norm, fmt_cur, fmt_date, ts_now,
                    build_fw_map, build_ag_map, match_row,
                    parse_pratiche_v2, load_storico, add_to_storico, STORICO_AGENTI)
 
 st.set_page_config(page_title="BIGGBAOO ↔ Agenti", page_icon="👥", layout="wide")
-name, username = require_login()
+name, username = require_admin()
 
 st.markdown("""
 <style>

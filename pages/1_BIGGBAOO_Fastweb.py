@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os, io
-from auth import require_login
+from auth import require_login, require_admin
 from drive import get_all_files, download_by_id
 from utils import (norm, fmt_cur, fmt_date, ts_now,
                    parse_inserito, parse_pagato, match_ins_pag,
@@ -10,7 +10,7 @@ from utils import (norm, fmt_cur, fmt_date, ts_now,
 st.set_page_config(page_title="BIGGBAOO ↔ Fastweb", page_icon="📋", layout="wide")
 
 # ─── AUTH CHECK ──────────────────────────────────
-name, username = require_login()
+name, username = require_admin()
 
 # ─── CSS ─────────────────────────────────────────
 st.markdown("""
