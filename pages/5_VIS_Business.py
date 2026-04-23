@@ -169,7 +169,7 @@ else:
 
 # ── Anteprima colorata ────────────────────────────────────────────────────────
 st.markdown("#### 🎨 Anteprima colorata — colonna Pagabile")
-styled = st.session_state.df_edit.style.applymap(color_pagabile, subset=["pagabile"])
+styled = st.session_state.df_edit.style.map(color_pagabile, subset=["pagabile"])
 st.dataframe(styled, use_container_width=True)
 
 # ── Salva / Export ────────────────────────────────────────────────────────────
