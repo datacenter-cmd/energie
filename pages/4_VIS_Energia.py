@@ -15,11 +15,19 @@ st.markdown("""
 .vis-header p{margin:4px 0 0;opacity:.85;font-size:.9rem}
 </style>""", unsafe_allow_html=True)
 
-st.markdown(f"""
+col_hdr, col_exit = st.columns([6, 1])
+with col_hdr:
+    st.markdown(f"""
 <div class="vis-header">
     <h2>📋 VIS Energia — Compilazione Pratiche</h2>
     <p>Operatore: <strong>{name}</strong> · Compila i dati e segna ogni pratica come Sì / No</p>
 </div>""", unsafe_allow_html=True)
+with col_exit:
+    st.markdown("<div style='padding-top:18px'>", unsafe_allow_html=True)
+    from auth import logout
+    if st.button("🚪 Esci", use_container_width=True):
+        logout()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'vis_energia.xlsx')
 
