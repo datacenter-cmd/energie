@@ -143,13 +143,6 @@ st.divider()
 # ── Vista ─────────────────────────────────────────────────────────────────────
 vista = st.radio("Vista", ["🖥️ Desktop (tabella)", "📱 Mobile (schede)"], horizontal=True)
 
-def color_pagabile(val):
-    v = str(val).strip().lower()
-    if v == "sì": return "background-color: #c8f7c5"
-    elif v == "no": return "background-color: #f7c5c5"
-    elif v == "da verificare": return "background-color: #fff3cd"
-    return ""
-
 COLUMN_CONFIG = {
     "negozio": st.column_config.SelectboxColumn("Negozio", options=NEGOZI, required=False),
     "operatore": st.column_config.SelectboxColumn("Operatore", options=OPERATORI, required=False),
@@ -204,11 +197,6 @@ else:
             df_work.at[i, "pt inserito"] = c1.selectbox("PT inserito", PT_OPTS, key=f"pti_{i}")
             df_work.at[i, "pt attivato"] = c2.selectbox("PT attivato", PT_OPTS, key=f"pta_{i}")
             df_work.at[i, "note"] = st.text_input("Note", value=str(row.get("note","") or ""), key=f"note_{i}")
-
-# ── Anteprima colorata ────────────────────────────────────────────────────────
-st.markdown("#### 🎨 Anteprima colorata — colonna Pagabile")
-styled = st.session_state.df_edit.style.map(color_pagabile, subset=["pagabile"])
-st.dataframe(styled, use_container_width=True)
 
 st.divider()
 
