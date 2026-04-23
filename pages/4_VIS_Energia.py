@@ -82,37 +82,101 @@ for col, label, val, color in [
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ─── TABELLA EDITABILE ────────────────────────────────
+# ─── TOGGLE VISTA ─────────────────────────────────────
 st.markdown("### ✏️ Modifica pratiche")
-st.caption("Compila i campi vuoti. Usa il menu a tendina nella colonna **Pagabile** per selezionare Sì o No. Poi clicca Salva.")
+vista = st.radio("Vista", ["📱 Mobile (schede)", "🖥️ Desktop (tabella)"],
+    horizontal=True, label_visibility="collapsed")
+st.caption("Compila i campi vuoti. Usa il menu a tendina per Pagabile. Poi clicca Salva.")
 
-col_config = {
-    'DATA INSERIMENTO':       st.column_config.TextColumn("Data",          disabled=True, width="small"),
-    'NEGOZIO':                st.column_config.SelectboxColumn(
-        "Negozio", options=['comet pontedera', 'euronics corciano', 'euronics gavinana', 'euronics grosseto', 'euronics montecatini', 'euronics parco prato', 'mw agliana', 'mw collestrada', 'mw empoli', 'mw figline', 'mw gigli', 'mw novoli', 'mw pisa', 'mw roma est', 'mw roma (porta di)', 'mw roma primavera'], required=False, width="medium"
-    ),
-    'OPERATORE':              st.column_config.SelectboxColumn(
-        "Operatore", options=['Adelina Meta', 'Aissam El Moujaid', 'Carmen Davila', 'Biggbaoo', 'David John Gallo', 'Emerson Espiritu', 'Emiliano Romei', 'Fabian Sulmina', 'Feris Rahmouni', 'Francesco Butelli', 'Giovanni Giglio', 'Gloria La Giusa', 'Katia Testa', 'Mariami Iashvili', 'Matteo Stefanelli', 'Nicole Gamboa', 'Samuele Guido', 'Serenella Nacci', 'Simona Cucu', 'Simone Marra', 'Yadira Davila'], required=False, width="medium"
-    ),
-    'TIPOLOGIA':              st.column_config.TextColumn("Tipologia",     disabled=True, width="small"),
-    'FWEN':                   st.column_config.TextColumn("FWEN",                         width="medium"),
-    'PARTITA IVA':            st.column_config.TextColumn("Partita IVA",                  width="medium"),
-    'CODICE FISCALE':         st.column_config.TextColumn("Cod. Fiscale",                 width="medium"),
-    'POD':                    st.column_config.TextColumn("POD",                          width="medium"),
-    'NOME E COGNOME CLIENTE': st.column_config.TextColumn("Cliente",                      width="large"),
-    'PAGABILE':               st.column_config.SelectboxColumn(
-        "Pagabile", options=["", "Sì", "No"], required=False, width="small"
-    ),
-}
+NEGOZI_OPT = ["", "comet pontedera", "euronics corciano", "euronics gavinana", "euronics grosseto",
+    "euronics montecatini", "euronics parco prato", "mw agliana", "mw collestrada",
+    "mw empoli", "mw figline", "mw gigli", "mw novoli", "mw pisa",
+    "mw roma est", "mw roma (porta di)", "mw roma primavera"]
 
-edited_df = st.data_editor(
-    df,
-    column_config=col_config,
-    use_container_width=True,
-    hide_index=True,
-    num_rows="dynamic",
-    height=min(400, 50 + len(df) * 40),
-)
+OPERATORI_OPT = ["", "Adelina Meta", "Aissam El Moujaid", "Carmen Davila", "Biggbaoo",
+    "David John Gallo", "Emerson Espiritu", "Emiliano Romei", "Fabian Sulmina",
+    "Feris Rahmouni", "Francesco Butelli", "Giovanni Giglio", "Gloria La Giusa",
+    "Katia Testa", "Mariami Iashvili", "Matteo Stefanelli", "Nicole Gamboa",
+    "Samuele Guido", "Serenella Nacci", "Simona Cucu", "Simone Marra", "Yadira Davila"]
+
+if "edited_rows" not in st.session_state:
+    st.session_state["edited_rows"] = df.copy()
+
+if vista == "📱 Mobile (schede)":
+    # ── VISTA MOBILE: un expander per ogni pratica ──
+    df_work = st.session_state["edited_rows"].copy()
+    # Aggiungi riga vuota
+    if st.button("➕ Aggiungi pratica"):
+        new_row = {c: '' for c in df_work.columns}
+        df_work = pd.concat([df_work, pd.DataFrame([new_row])], ignore_index=True)
+        st.session_state["edited_rows"] = df_work
+
+    for i, row in df_work.iterrows():
+        neg  = row.get('NEGOZIO','') or '—'
+        op   = row.get('OPERATORE','') or '—'
+        data = row.get('DATA INSERIMENTO','') or '—'
+        pag  = str(row.get('PAGABILE','')).strip()
+        badge = '✅' if pag.upper() in ['SÌ','SI'] else ('❌' if pag.upper()=='NO' else '⏳')
+        label = f"{badge} {data} · {neg} · {op}"
+
+        with st.expander(label, expanded=(pag=='')):
+            c1, c2 = st.columns(2)
+            with c1:
+                negozio = st.selectbox("Negozio", NEGOZI_OPT,
+                    index=NEGOZI_OPT.index(row.get('NEGOZIO','')) if row.get('NEGOZIO','') in NEGOZI_OPT else 0,
+                    key=f"neg_{i}")
+                operatore = st.selectbox("Operatore", OPERATORI_OPT,
+                    index=OPERATORI_OPT.index(row.get('OPERATORE','')) if row.get('OPERATORE','') in OPERATORI_OPT else 0,
+                    key=f"op_{i}")
+                tipologia = st.selectbox("Tipologia", ["","CONSUMER","BUSINESS"],
+                    index=["","CONSUMER","BUSINESS"].index(row.get('TIPOLOGIA','')) if row.get('TIPOLOGIA','') in ["","CONSUMER","BUSINESS"] else 0,
+                    key=f"tip_{i}")
+            with c2:
+                fwen = st.text_input("FWEN", value=str(row.get('FWEN','')), key=f"fwen_{i}")
+                cf   = st.text_input("Cod. Fiscale", value=str(row.get('CODICE FISCALE','')), key=f"cf_{i}")
+                pod  = st.text_input("POD", value=str(row.get('POD','')), key=f"pod_{i}")
+            cliente = st.text_input("Nome e Cognome Cliente",
+                value=str(row.get('NOME E COGNOME CLIENTE','')), key=f"cli_{i}")
+            pagabile = st.selectbox("Pagabile", ["","Sì","No"],
+                index=["","Sì","No"].index(pag) if pag in ["","Sì","No"] else 0,
+                key=f"pag_{i}")
+
+            # Aggiorna session state
+            df_work.at[i,'NEGOZIO']   = negozio
+            df_work.at[i,'OPERATORE'] = operatore
+            df_work.at[i,'TIPOLOGIA'] = tipologia
+            df_work.at[i,'FWEN']      = fwen
+            df_work.at[i,'CODICE FISCALE'] = cf
+            df_work.at[i,'POD']       = pod
+            df_work.at[i,'NOME E COGNOME CLIENTE'] = cliente
+            df_work.at[i,'PAGABILE']  = pagabile
+
+    st.session_state["edited_rows"] = df_work
+    edited_df = df_work
+
+else:
+    # ── VISTA DESKTOP: data_editor ──
+    col_config = {
+        'DATA INSERIMENTO':       st.column_config.TextColumn("Data",      disabled=True, width="small"),
+        'NEGOZIO':                st.column_config.SelectboxColumn("Negozio",    options=NEGOZI_OPT[1:],    required=False, width="medium"),
+        'OPERATORE':              st.column_config.SelectboxColumn("Operatore",  options=OPERATORI_OPT[1:], required=False, width="medium"),
+        'TIPOLOGIA':              st.column_config.TextColumn("Tipologia",  disabled=True, width="small"),
+        'FWEN':                   st.column_config.TextColumn("FWEN",                      width="medium"),
+        'PARTITA IVA':            st.column_config.TextColumn("Partita IVA",               width="medium"),
+        'CODICE FISCALE':         st.column_config.TextColumn("Cod. Fiscale",              width="medium"),
+        'POD':                    st.column_config.TextColumn("POD",                       width="medium"),
+        'NOME E COGNOME CLIENTE': st.column_config.TextColumn("Cliente",                   width="large"),
+        'PAGABILE':               st.column_config.SelectboxColumn("Pagabile",
+            options=["", "Sì", "No"], required=False, width="small"),
+    }
+    edited_df = st.data_editor(
+        df,
+        column_config=col_config,
+        use_container_width=True,
+        hide_index=True,
+        num_rows="dynamic",
+        height=min(400, 50 + len(df) * 40),
+    )
 
 # ─── ANTEPRIMA COLORATA ──────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
