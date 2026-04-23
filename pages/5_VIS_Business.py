@@ -120,12 +120,43 @@ if "df_edit" not in st.session_state or st.session_state.get("mese_corrente") !=
 
 df_work = st.session_state.df_edit
 
-# Forza colonne testuali a str per evitare errori data_editor
-for _c in ["negozio", "operatore", "id pratica", "partita iva", "ragione sociale",
-           "seriale sim", "piano tariffario inserito", "pagabile", "note", "pt inserito", "pt attivato"]:
+# Forza colonne testuali a str e normalizza numerici
+for _c in ["negozio", "operatore", "ragione sociale", "piano tariffario inserito",
+           "pagabile", "note", "pt inserito", "pt attivato"]:
     if _c in df_work.columns:
-        df_work[_c] = df_work[_c].fillna("").astype(str).str.strip()
-        df_work[_c] = df_work[_c].replace("nan", "")
+        df_work[_c] = df_work[_c].fillna("").astype(str).str.strip().replace("nan", "")
+
+# ID Pratica: intero senza decimali
+if "id pratica" in df_work.columns:
+    def to_int_str(v):
+        try:
+            if str(v).strip() in ("", "nan"): return ""
+            return str(int(float(str(v).strip())))
+        except:
+            return str(v).strip()
+    df_work["id pratica"] = df_work["id pratica"].apply(to_int_str)
+
+# Partita IVA: testo con zero iniziale, 11 cifre
+if "partita iva" in df_work.columns:
+    def to_piva_str(v):
+        try:
+            if str(v).strip() in ("", "nan"): return ""
+            return str(int(float(str(v).strip()))).zfill(11)
+        except:
+            return str(v).strip()
+    df_work["partita iva"] = df_work["partita iva"].apply(to_piva_str)
+
+# Seriale SIM: stringa intera senza notazione scientifica
+if "seriale sim" in df_work.columns:
+    def to_sim_str(v):
+        try:
+            if str(v).strip() in ("", "nan"):
+                return ""
+            f = float(str(v).strip())
+            return f"{int(f)}"
+        except:
+            return str(v).strip()
+    df_work["seriale sim"] = df_work["seriale sim"].apply(to_sim_str)
 
 # ── DESKTOP ──────────────────────────────────────────────────────────────────
 if vista == "🖥️ Desktop (tabella)":
