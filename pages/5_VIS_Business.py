@@ -30,7 +30,9 @@ DATA_FILE = "data/vis_business_2026.xlsx"
 MESI = ["gennaio 2026", "febbraio 2026", "marzo 2026", "aprile 2026"]
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
-USERS = st.secrets.get("credentials", {})
+USERS = {
+    "vis.business": "Biggbaoo26!"
+}
 
 def check_login():
     if "logged_in" not in st.session_state:
