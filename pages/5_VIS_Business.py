@@ -82,7 +82,8 @@ def save_data(df_dict):
             df.to_excel(writer, sheet_name=mese, index=False)
 
 # ── Selezione mese ────────────────────────────────────────────────────────────
-mese_sel = st.selectbox("📅 Seleziona mese", MESI)
+mese_corrente = next((m for m in MESI if "aprile" in m), MESI[-1])
+mese_sel = st.selectbox("📅 Seleziona mese", MESI, index=MESI.index(mese_corrente))
 
 df = load_data(mese_sel)
 
@@ -132,16 +133,17 @@ def normalizza(df_in):
 df_work = normalizza(st.session_state.df_edit)
 
 # ── Riepilogo mese (IN CIMA) ──────────────────────────────────────────────────
-# Calcola conteggi per tipo (pt inserito)
+# Riepilogo compatto su una riga
 n_fisso = len(df_work[df_work["pt inserito"].str.strip().str.lower() == "fissa"])
 n_mobile = len(df_work[df_work["pt inserito"].str.strip().str.lower() == "mobile"])
 n_easy = len(df_work[df_work["pt inserito"].str.strip().str.lower() == "easy r"])
 
-col_r1, col_r2, col_r3, col_r4 = st.columns(4)
-col_r1.metric("📋 Totale pratiche", len(df_work))
-col_r2.metric("📡 Fisso", n_fisso)
-col_r3.metric("📱 Mobile", n_mobile)
-col_r4.metric("🛒 Easy Rent", n_easy)
+st.markdown(
+    f"📋 **Totale: {len(df_work)}** &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"📡 Fisso: **{n_fisso}** &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"📱 Mobile: **{n_mobile}** &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"🛒 Easy Rent: **{n_easy}**"
+)
 
 st.divider()
 
