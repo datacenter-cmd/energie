@@ -42,6 +42,12 @@ def load_data():
         df[col] = df[col].fillna('').astype(str).str.strip()
     # Data come stringa
     df['DATA INSERIMENTO'] = pd.to_datetime(df['DATA INSERIMENTO'], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
+    # Normalizza PAGABILE ai soli valori ammessi dal dropdown
+    df['PAGABILE'] = df['PAGABILE'].str.strip().replace({
+        'si':'Sì','SI':'Sì','sì':'Sì','SÌ':'Sì','SÌ':'Sì',
+        'no':'No','NO':'No',
+    })
+    df['PAGABILE'] = df['PAGABILE'].apply(lambda x: x if x in ['Sì','No'] else '')
     return df
 
 df = load_data()
@@ -71,7 +77,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # ─── TABELLA EDITABILE ────────────────────────────────
 st.markdown("### ✏️ Modifica pratiche")
-st.caption("Compila i campi vuoti. Per **Pagabile** scrivi **Sì** oppure **No**. Poi clicca Salva.")
+st.caption("Compila i campi vuoti. Usa il menu a tendina nella colonna **Pagabile** per selezionare Sì o No. Poi clicca Salva.")
 
 col_config = {
     'DATA INSERIMENTO':       st.column_config.TextColumn("Data",          disabled=True, width="small"),
@@ -83,7 +89,9 @@ col_config = {
     'CODICE FISCALE':         st.column_config.TextColumn("Cod. Fiscale",                 width="medium"),
     'POD':                    st.column_config.TextColumn("POD",                          width="medium"),
     'NOME E COGNOME CLIENTE': st.column_config.TextColumn("Cliente",                      width="large"),
-    'PAGABILE':               st.column_config.TextColumn("Pagabile (Sì/No)",             width="small"),
+    'PAGABILE':               st.column_config.SelectboxColumn(
+        "Pagabile", options=["", "Sì", "No"], required=False, width="small"
+    ),
 }
 
 edited_df = st.data_editor(
@@ -94,6 +102,58 @@ edited_df = st.data_editor(
     num_rows="fixed",
     height=min(400, 50 + len(df) * 40),
 )
+
+# ─── ANTEPRIMA COLORATA ──────────────────────────────
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("### 🎨 Anteprima con colori")
+
+def color_row(row):
+    p = str(row.get('PAGABILE','')).strip().upper()
+    if p in ['SÌ','SI']:
+        bg = '#e8f5e9'; color = '#1b5e20'; badge = '✅ Sì'
+    elif p == 'NO':
+        bg = '#ffebee'; color = '#b71c1c'; badge = '❌ No'
+    else:
+        bg = '#fffde7'; color = '#795548'; badge = '⏳ —'
+    return bg, color, badge
+
+rows_html = ''
+for _, row in edited_df.iterrows():
+    bg, color, badge = color_row(row)
+    rows_html += f"""<tr style="background:{bg}">
+        <td style="padding:7px 10px">{row.get('DATA INSERIMENTO','')}</td>
+        <td style="padding:7px 10px">{row.get('NEGOZIO','')}</td>
+        <td style="padding:7px 10px">{row.get('OPERATORE','')}</td>
+        <td style="padding:7px 10px">{row.get('TIPOLOGIA','')}</td>
+        <td style="padding:7px 10px">{row.get('FWEN','')}</td>
+        <td style="padding:7px 10px">{row.get('CODICE FISCALE','')}</td>
+        <td style="padding:7px 10px">{row.get('POD','')}</td>
+        <td style="padding:7px 10px">{row.get('NOME E COGNOME CLIENTE','')}</td>
+        <td style="padding:7px 10px;font-weight:800;color:{color}">{badge}</td>
+    </tr>"""
+
+st.markdown(f"""
+<div style="overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;font-size:.85rem;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden">
+    <thead>
+        <tr style="background:#1a1a1a;color:#fff">
+            <th style="padding:9px 10px;text-align:left">Data</th>
+            <th style="padding:9px 10px;text-align:left">Negozio</th>
+            <th style="padding:9px 10px;text-align:left">Operatore</th>
+            <th style="padding:9px 10px;text-align:left">Tipologia</th>
+            <th style="padding:9px 10px;text-align:left">FWEN</th>
+            <th style="padding:9px 10px;text-align:left">Cod. Fiscale</th>
+            <th style="padding:9px 10px;text-align:left">POD</th>
+            <th style="padding:9px 10px;text-align:left">Cliente</th>
+            <th style="padding:9px 10px;text-align:left">Pagabile</th>
+        </tr>
+    </thead>
+    <tbody>{rows_html}</tbody>
+</table>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ─── SALVA / EXPORT ───────────────────────────────────
 col_save, col_export = st.columns([1, 4])
