@@ -120,6 +120,13 @@ if "df_edit" not in st.session_state or st.session_state.get("mese_corrente") !=
 
 df_work = st.session_state.df_edit
 
+# Forza colonne testuali a str per evitare errori data_editor
+for _c in ["negozio", "operatore", "id pratica", "partita iva", "ragione sociale",
+           "seriale sim", "piano tariffario inserito", "pagabile", "note", "pt inserito", "pt attivato"]:
+    if _c in df_work.columns:
+        df_work[_c] = df_work[_c].fillna("").astype(str).str.strip()
+        df_work[_c] = df_work[_c].replace("nan", "")
+
 # ── DESKTOP ──────────────────────────────────────────────────────────────────
 if vista == "🖥️ Desktop (tabella)":
     edited = st.data_editor(
