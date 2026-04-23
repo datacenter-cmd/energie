@@ -44,6 +44,7 @@ def login_form():
                 st.session_state["logged_in"] = True
                 st.session_state["username"] = username
                 st.session_state["name"] = user["name"]
+                st.session_state["role"] = user.get("role", "admin")
                 st.rerun()
             else:
                 st.error("❌ Username o password errati.")
@@ -58,5 +59,16 @@ def require_login():
     """Per le pagine secondarie: blocca se non loggato."""
     if not st.session_state.get("logged_in"):
         st.warning("🔒 Accedi dalla pagina principale per usare questa sezione.")
+        st.stop()
+    return st.session_state.get("name"), st.session_state.get("username")
+
+def get_role():
+    return st.session_state.get("role", "admin")
+
+def require_admin():
+    """Blocca l'accesso se l'utente non è admin."""
+    require_login()
+    if st.session_state.get("role") != "admin":
+        st.error("🔒 Accesso riservato agli amministratori.")
         st.stop()
     return st.session_state.get("name"), st.session_state.get("username")

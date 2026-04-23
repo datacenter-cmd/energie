@@ -2,15 +2,24 @@ users:
   admin1:
     name: Amministratore 1
     password: 310f9a880388a4a33bba71387b123af5032cefe709e70df64091649792b3842d
+    role: admin
   admin2:
     name: Amministratore 2
     password: 310f9a880388a4a33bba71387b123af5032cefe709e70df64091649792b3842d
+    role: admin
   admin3:
     name: Amministratore 3
     password: 310f9a880388a4a33bba71387b123af5032cefe709e70df64091649792b3842d
+    role: admin
   admin4:
     name: Amministratore 4
     password: 310f9a880388a4a33bba71387b123af5032cefe709e70df64091649792b3842d
+    role: admin
   ignazio.gatta:
     name: Ignazio Gatta
     password: 310f9a880388a4a33bba71387b123af5032cefe709e70df64091649792b3842d
+    role: admin
+  vis.energy:
+    name: VIS Energy Operator
+    password: 58c4a86afa4d1829c9937ee4f89e97f5813d1b31204fcd208a72313ccf1ac7de
+    role: vis
