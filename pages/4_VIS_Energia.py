@@ -42,6 +42,13 @@ def load_data():
         df[col] = df[col].fillna('').astype(str).str.strip()
     # Data come stringa
     df['DATA INSERIMENTO'] = pd.to_datetime(df['DATA INSERIMENTO'], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
+    # Normalizza NEGOZIO e OPERATORE: strip spazi + forza ai valori della lista
+    _negozi = ['comet pontedera', 'euronics corciano', 'euronics gavinana', 'euronics grosseto', 'euronics montecatini', 'euronics parco prato', 'mw agliana', 'mw collestrada', 'mw empoli', 'mw figline', 'mw gigli', 'mw novoli', 'mw pisa', 'mw roma est', 'mw roma (porta di)', 'mw roma primavera']
+    _operatori = ['Adelina Meta', 'Aissam El Moujaid', 'Carmen Davila', 'Biggbaoo', 'David John Gallo', 'Emerson Espiritu', 'Emiliano Romei', 'Fabian Sulmina', 'Feris Rahmouni', 'Francesco Butelli', 'Giovanni Giglio', 'Gloria La Giusa', 'Katia Testa', 'Mariami Iashvili', 'Matteo Stefanelli', 'Nicole Gamboa', 'Samuele Guido', 'Serenella Nacci', 'Simona Cucu', 'Simone Marra', 'Yadira Davila']
+    df['NEGOZIO']   = df['NEGOZIO'].str.strip().apply(
+        lambda x: x if x in _negozi else '')
+    df['OPERATORE'] = df['OPERATORE'].str.strip().apply(
+        lambda x: x if x in _operatori else '')
     # Normalizza PAGABILE ai soli valori ammessi dal dropdown
     df['PAGABILE'] = df['PAGABILE'].str.strip().replace({
         'si':'Sì','SI':'Sì','sì':'Sì','SÌ':'Sì','SÌ':'Sì',
@@ -81,8 +88,12 @@ st.caption("Compila i campi vuoti. Usa il menu a tendina nella colonna **Pagabil
 
 col_config = {
     'DATA INSERIMENTO':       st.column_config.TextColumn("Data",          disabled=True, width="small"),
-    'NEGOZIO':                st.column_config.TextColumn("Negozio",       disabled=True, width="medium"),
-    'OPERATORE':              st.column_config.TextColumn("Operatore",     disabled=True, width="medium"),
+    'NEGOZIO':                st.column_config.SelectboxColumn(
+        "Negozio", options=['comet pontedera', 'euronics corciano', 'euronics gavinana', 'euronics grosseto', 'euronics montecatini', 'euronics parco prato', 'mw agliana', 'mw collestrada', 'mw empoli', 'mw figline', 'mw gigli', 'mw novoli', 'mw pisa', 'mw roma est', 'mw roma (porta di)', 'mw roma primavera'], required=False, width="medium"
+    ),
+    'OPERATORE':              st.column_config.SelectboxColumn(
+        "Operatore", options=['Adelina Meta', 'Aissam El Moujaid', 'Carmen Davila', 'Biggbaoo', 'David John Gallo', 'Emerson Espiritu', 'Emiliano Romei', 'Fabian Sulmina', 'Feris Rahmouni', 'Francesco Butelli', 'Giovanni Giglio', 'Gloria La Giusa', 'Katia Testa', 'Mariami Iashvili', 'Matteo Stefanelli', 'Nicole Gamboa', 'Samuele Guido', 'Serenella Nacci', 'Simona Cucu', 'Simone Marra', 'Yadira Davila'], required=False, width="medium"
+    ),
     'TIPOLOGIA':              st.column_config.TextColumn("Tipologia",     disabled=True, width="small"),
     'FWEN':                   st.column_config.TextColumn("FWEN",                         width="medium"),
     'PARTITA IVA':            st.column_config.TextColumn("Partita IVA",                  width="medium"),
@@ -99,7 +110,7 @@ edited_df = st.data_editor(
     column_config=col_config,
     use_container_width=True,
     hide_index=True,
-    num_rows="fixed",
+    num_rows="dynamic",
     height=min(400, 50 + len(df) * 40),
 )
 
