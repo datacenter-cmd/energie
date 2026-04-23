@@ -132,11 +132,16 @@ def normalizza(df_in):
 df_work = normalizza(st.session_state.df_edit)
 
 # ── Riepilogo mese (IN CIMA) ──────────────────────────────────────────────────
+# Calcola conteggi per tipo (pt inserito)
+n_fisso = len(df_work[df_work["pt inserito"].str.strip().str.lower() == "fissa"])
+n_mobile = len(df_work[df_work["pt inserito"].str.strip().str.lower() == "mobile"])
+n_easy = len(df_work[df_work["pt inserito"].str.strip().str.lower() == "easy r"])
+
 col_r1, col_r2, col_r3, col_r4 = st.columns(4)
 col_r1.metric("📋 Totale pratiche", len(df_work))
-col_r2.metric("✅ Pagabili", len(df_work[df_work["pagabile"].str.strip().str.lower() == "sì"]))
-col_r3.metric("❌ Non pagabili", len(df_work[df_work["pagabile"].str.strip().str.lower() == "no"]))
-col_r4.metric("⚠️ Da verificare", len(df_work[df_work["pagabile"].str.strip().str.lower() == "da verificare"]))
+col_r2.metric("📡 Fisso", n_fisso)
+col_r3.metric("📱 Mobile", n_mobile)
+col_r4.metric("🛒 Easy Rent", n_easy)
 
 st.divider()
 
