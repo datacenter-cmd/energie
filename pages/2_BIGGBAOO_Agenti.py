@@ -22,6 +22,10 @@ st.markdown("""
 
 # ─── SIDEBAR ──────────────────────────────────────────
 render_sidebar(name)
+with st.sidebar:
+    st.divider()
+    st.markdown("**📂 Carica file agenti:**")
+    uploaded = st.file_uploader("File Agenti (.xlsx)", type=["xlsx"], label_visibility="collapsed")
 st.markdown("# 👥 BIGGBAOO ↔ Agenti")
 st.markdown("Pratiche agenti · Pagamenti Fastweb · Compensi corrisposti")
 st.divider()

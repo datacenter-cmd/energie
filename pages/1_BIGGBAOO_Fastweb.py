@@ -59,6 +59,10 @@ div[data-testid="stSidebarContent"] { background:#ebebeb !important; }
 
 # ─── SIDEBAR ─────────────────────────────────────
 render_sidebar(name)
+with st.sidebar:
+    st.divider()
+    st.markdown("**📂 Carica file Fastweb:**")
+    uploaded = st.file_uploader("File Fastweb (.xlsx)", type=["xlsx"], label_visibility="collapsed")
 # ─── HEADER ──────────────────────────────────────
 st.markdown("# 📋 BIGGBAOO ↔ Fastweb")
 st.markdown("Confronto pratiche inserite vs pagamenti ricevuti da Fastweb")
