@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os, io
+from sidebar_shared import render_sidebar
 from auth import require_login, require_admin
 from drive import get_all_files, download_by_id
 from utils import (norm, fmt_cur, fmt_date, ts_now,
@@ -57,52 +58,7 @@ div[data-testid="stSidebarContent"] { background:#ebebeb !important; }
 """, unsafe_allow_html=True)
 
 # ─── SIDEBAR ─────────────────────────────────────
-with st.sidebar:
-    st.markdown("### ⚡ Portale Energie")
-    st.markdown("**BIGGBAOO**")
-    st.markdown(f"👤 {name}")
-    st.divider()
-    st.markdown("**Carica file Excel Fastweb**")
-    # ── Sorgente dati: Drive o Upload manuale ──
-    st.markdown("**📂 Carica da Google Drive**")
-    drive_files = get_all_files("fastweb_")
-    uploaded = None
-    if drive_files:
-        nomi = [n for n, _ in drive_files]
-        scelta = st.selectbox("Seleziona file da Drive", nomi, index=0)
-        file_id = dict(drive_files)[scelta]
-        if st.button("📥 Carica da Drive"):
-            buf = download_by_id(file_id)
-            import types
-            uploaded = buf
-            uploaded.name = scelta
-            st.session_state["fw_buf"] = buf
-            st.session_state["fw_name"] = scelta
-        elif "fw_buf" in st.session_state:
-            uploaded = st.session_state["fw_buf"]
-            uploaded.name = st.session_state["fw_name"]
-    else:
-        st.caption("Nessun file trovato su Drive — carica manualmente sotto")
-
-    st.markdown("**oppure carica manualmente:**")
-    manual = st.file_uploader("File mensile (.xlsx)", type=["xlsx","xls"],
-        help="Deve contenere i fogli: inserito · pagato nuovo format")
-    if manual:
-        uploaded = manual
-
-    st.divider()
-    st.markdown("**🕐 Storico caricamenti**")
-    storico = load_storico(STORICO_FASTWEB)
-    if storico:
-        for s in storico[:8]:
-            np = s.get("totale",0)-s.get("pagate",0)
-            st.markdown(f"📄 **{s['filename']}**  \n🕐 {s['ts']} · ✅{s.get('pagate',0)} ❌{np}")
-            st.markdown("---")
-    else:
-        st.caption("Nessun caricamento precedente")
-    st.divider()
-    st.caption("📋 BIGGBAOO ↔ Fastweb")
-
+render_sidebar(name)
 # ─── HEADER ──────────────────────────────────────
 st.markdown("# 📋 BIGGBAOO ↔ Fastweb")
 st.markdown("Confronto pratiche inserite vs pagamenti ricevuti da Fastweb")

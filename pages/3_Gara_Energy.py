@@ -1,5 +1,6 @@
 import streamlit as st
 import base64
+from sidebar_shared import render_sidebar
 from auth import require_login
 
 st.set_page_config(page_title="Gara Energy", page_icon="⚡", layout="wide")

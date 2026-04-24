@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
+from sidebar_shared import render_sidebar
 from auth import require_login, require_admin
 from drive import get_all_files, download_by_id
 from utils import (norm, fmt_cur, fmt_date, ts_now,
@@ -20,40 +21,7 @@ st.markdown("""
 </style>""", unsafe_allow_html=True)
 
 # ─── SIDEBAR ──────────────────────────────────────────
-with st.sidebar:
-    st.markdown(f"👤 **{name}**")
-    st.divider()
-    st.markdown("**📂 File agenti da Google Drive**")
-    drive_files = get_all_files("agenti_")
-    uploaded = None
-    if drive_files:
-        nomi = [n for n, _ in drive_files]
-        scelta = st.selectbox("Seleziona file", nomi, index=0)
-        fid = dict(drive_files)[scelta]
-        if st.button("📥 Carica da Drive"):
-            buf = download_by_id(fid)
-            st.session_state["ag2_buf"] = buf
-            st.session_state["ag2_name"] = scelta
-        if "ag2_buf" in st.session_state:
-            uploaded = st.session_state["ag2_buf"]
-            uploaded.name = st.session_state["ag2_name"]
-    else:
-        st.caption("Nessun file su Drive — carica manualmente")
-    manual = st.file_uploader("oppure carica .xlsx", type=["xlsx","xls"])
-    if manual: uploaded = manual
-    st.divider()
-    st.markdown("**🕐 Storico caricamenti**")
-    storico = load_storico(STORICO_AGENTI)
-    if storico:
-        for s in storico[:5]:
-            nc = s.get("totale",0) - s.get("complete",0)
-            st.markdown(f"📄 **{s.get('filename','')}**  \n🕐 {s.get('ts','')} · ✅{s.get('complete',0)} ❌{nc}")
-            st.markdown("---")
-    else:
-        st.caption("Nessun caricamento precedente")
-    st.divider()
-    st.caption("👥 BIGGBAOO ↔ Agenti")
-
+render_sidebar(name)
 st.markdown("# 👥 BIGGBAOO ↔ Agenti")
 st.markdown("Pratiche agenti · Pagamenti Fastweb · Compensi corrisposti")
 st.divider()

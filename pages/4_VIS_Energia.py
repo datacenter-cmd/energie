@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io, os
+from sidebar_shared import render_sidebar
 from auth import require_login, get_role
 
 st.set_page_config(page_title="VIS Energia", page_icon="📋", layout="wide")
