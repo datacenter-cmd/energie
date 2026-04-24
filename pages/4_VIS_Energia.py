@@ -3,10 +3,10 @@ from datetime import date
 import pandas as pd
 import io, os
 from sidebar_shared import render_sidebar
-from auth import require_login, get_role
+from auth import require_vis_energy, get_role
 
 st.set_page_config(page_title="VIS Energia", page_icon="📋", layout="wide")
-name, username = require_login()
+name, username = require_vis_energy()
 render_sidebar(name)
 role = get_role()
 
