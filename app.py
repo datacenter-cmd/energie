@@ -95,6 +95,24 @@ if not login_form():
 
 name = st.session_state.get("name")
 username = st.session_state.get("username")
+role = st.session_state.get("role", "admin")
+
+# Utente VIS: non può vedere la dashboard, viene rimandato alla sua pagina
+if role == "vis":
+    st.markdown("""
+    <div style="text-align:center;padding:3rem 0">
+        <div style="font-size:3rem">📋</div>
+        <div style="font-size:1.3rem;font-weight:700;margin:.5rem 0">Benvenuto, {name}</div>
+        <div style="color:#6b6b6b;margin-bottom:1.5rem">Usa il menu a sinistra per accedere alla tua sezione.</div>
+    </div>
+    """.format(name=name), unsafe_allow_html=True)
+    with st.sidebar:
+        st.markdown(f"### ⚡ Portale Energie")
+        st.markdown(f"**BIGGBAOO**")
+        st.markdown(f"👤 **{name}**")
+        st.divider()
+        if st.button("🚪 Esci"): logout()
+    st.stop()
 
 # ─── SIDEBAR ─────────────────────────────────────
 with st.sidebar:
