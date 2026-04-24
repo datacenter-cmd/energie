@@ -64,6 +64,14 @@ html, body, [class*="css"], .stMarkdown, .stText, button, input, select, textare
 
 /* Nascondi menu navigazione nativo Streamlit */
 section[data-testid="stSidebarNav"] {display: none !important;}
+div[data-testid="stSidebarNav"] {display: none !important;}
+[data-testid="stSidebarNavItems"] {display: none !important;}
+[data-testid="stSidebarNavSeparator"] {display: none !important;}
+nav[data-testid="stSidebarNav"] {display: none !important;}
+.st-emotion-cache-1rtdyuf {display: none !important;}
+.st-emotion-cache-6tkfeg {display: none !important;}
+ul[data-testid="stSidebarNavItems"] {display: none !important;}
+li[data-testid="stSidebarNavItem"] {display: none !important;}
 
 /* Sidebar */
 div[data-testid="stSidebarContent"] { background:#ebebeb !important; }
