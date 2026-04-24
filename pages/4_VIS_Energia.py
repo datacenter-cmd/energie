@@ -6,6 +6,7 @@ from auth import require_login, get_role
 
 st.set_page_config(page_title="VIS Energia", page_icon="📋", layout="wide")
 name, username = require_login()
+render_sidebar(name)
 role = get_role()
 
 st.markdown("""

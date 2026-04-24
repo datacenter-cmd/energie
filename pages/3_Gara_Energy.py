@@ -5,6 +5,7 @@ from auth import require_login
 
 st.set_page_config(page_title="Gara Energy", page_icon="⚡", layout="wide")
 name, username = require_login()
+render_sidebar(name)
 
 st.markdown("# ⚡ Gara Fastweb Energia")
 st.markdown("Lettera di remunerazione · Aprile 2026")
