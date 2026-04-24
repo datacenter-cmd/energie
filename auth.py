@@ -72,3 +72,21 @@ def require_admin():
         st.error("🔒 Accesso riservato agli amministratori.")
         st.stop()
     return st.session_state.get("name"), st.session_state.get("username")
+
+def require_vis_energy():
+    """Blocca se non loggato o non ha ruolo vis_energy o admin."""
+    require_login()
+    role = st.session_state.get("role", "")
+    if role not in ("admin", "vis_energy"):
+        st.error("🔒 Accesso riservato agli operatori VIS Energia.")
+        st.stop()
+    return st.session_state.get("name"), st.session_state.get("username")
+
+def require_vis_business():
+    """Blocca se non loggato o non ha ruolo vis_business o admin."""
+    require_login()
+    role = st.session_state.get("role", "")
+    if role not in ("admin", "vis_business"):
+        st.error("🔒 Accesso riservato agli operatori VIS Business.")
+        st.stop()
+    return st.session_state.get("name"), st.session_state.get("username")
