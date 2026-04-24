@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import date
 import pandas as pd
 import io, os
 from sidebar_shared import render_sidebar
@@ -73,10 +74,54 @@ def load_data():
 
 df = load_data()
 
-# ─── KPI ──────────────────────────────────────────────
-tot      = len(df)
-pagabili = (df['PAGABILE'].str.upper() == 'SÌ').sum() + (df['PAGABILE'].str.upper() == 'SI').sum()
-non_pag  = (df['PAGABILE'].str.upper() == 'NO').sum()
+# ─── SELETTORE MESE ────────────────────────────────────
+import calendar
+_MESI_IT = {1:"gennaio",2:"febbraio",3:"marzo",4:"aprile",5:"maggio",
+            6:"giugno",7:"luglio",8:"agosto",9:"settembre",10:"ottobre",
+            11:"novembre",12:"dicembre"}
+MESI_2026 = [f"{_MESI_IT[m]} 2026" for m in range(1,13)]
+_mese_now = f"{_MESI_IT[date.today().month]} {date.today().year}"
+_default_idx = MESI_2026.index(_mese_now) if _mese_now in MESI_2026 else len(MESI_2026)-1
+
+col_mese, _ = st.columns([3, 7])
+with col_mese:
+    mese_sel_e = st.selectbox("📅 Mese", MESI_2026, index=_default_idx, label_visibility="visible")
+
+# Filtra df per mese selezionato (se colonna DATA INSERIMENTO presente)
+if "DATA INSERIMENTO" in df.columns:
+    df["DATA INSERIMENTO"] = pd.to_datetime(df["DATA INSERIMENTO"], errors="coerce")
+    _mese_num = list(_MESI_IT.values()).index(mese_sel_e.split()[0]) + 1
+    _anno_num = int(mese_sel_e.split()[1])
+    df_mese = df[(df["DATA INSERIMENTO"].dt.month == _mese_num) & 
+                 (df["DATA INSERIMENTO"].dt.year == _anno_num)].copy()
+else:
+    df_mese = df.copy()
+
+
+# ─── RIEPILOGO MESE (uniforme a VIS Business) ──────────
+# Usa df_mese se disponibile (filtro mese attivo), altrimenti df intero
+_df_kpi = df_mese if 'df_mese' in dir() else df
+
+def _norm_tip(s):
+    return str(s).strip().lower()
+
+tot_tot      = len(_df_kpi)
+tot_consumer = (_df_kpi['TIPOLOGIA'].apply(_norm_tip) == 'consumer').sum() if 'TIPOLOGIA' in _df_kpi.columns else 0
+tot_business = (_df_kpi['TIPOLOGIA'].apply(_norm_tip) == 'business').sum() if 'TIPOLOGIA' in _df_kpi.columns else 0
+tot_gas      = (_df_kpi['TIPOLOGIA'].apply(_norm_tip) == 'gas').sum()      if 'TIPOLOGIA' in _df_kpi.columns else 0
+
+st.markdown(
+    f"📋 **Totale: {tot_tot}** &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"👤 Consumer: **{tot_consumer}** &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"🏢 Business: **{tot_business}** &nbsp;&nbsp;|&nbsp;&nbsp; "
+    f"🔥 Gas: **{tot_gas}**"
+)
+st.divider()
+
+# KPI pagabili (riga secondaria)
+tot      = len(_df_kpi)
+pagabili = (_df_kpi['PAGABILE'].str.upper() == 'SÌ').sum() + (_df_kpi['PAGABILE'].str.upper() == 'SI').sum()
+non_pag  = (_df_kpi['PAGABILE'].str.upper() == 'NO').sum()
 da_verif = tot - pagabili - non_pag
 
 c1,c2,c3,c4 = st.columns(4)
@@ -87,10 +132,8 @@ for col, label, val, color in [
     (c4, "⏳ DA VERIFICARE", da_verif, "#b8860b"),
 ]:
     with col:
-        st.markdown(f"""<div style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;
-            padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);min-height:90px">
-            <div style="font-size:.72rem;font-weight:800;color:#1a1a1a;text-transform:uppercase;
-                letter-spacing:.04em;margin-bottom:6px">{label}</div>
+        st.markdown(f"""<div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px;text-align:center;margin-bottom:.5rem">
+            <div style="font-size:.72rem;font-weight:800;color:#1a1a1a;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">{label}</div>
             <div style="font-size:1.8rem;font-weight:800;color:{color}">{val}</div>
         </div>""", unsafe_allow_html=True)
 
