@@ -2,12 +2,16 @@ import streamlit as st
 import pandas as pd
 import os
 import io
-from auth import require_vis_business
+from auth import require_login, get_role
 from sidebar_shared import render_sidebar
 
 st.set_page_config(page_title="VIS Business · BIGGBAOO", page_icon="💼", layout="wide")
 
-result = require_vis_business()
+result = require_login()
+_role = get_role()
+if _role not in ("admin", "vis_business"):
+    st.error("🔒 Accesso riservato agli operatori VIS Business.")
+    st.stop()
 name = result[0] if isinstance(result, tuple) else result
 render_sidebar(name)
 
